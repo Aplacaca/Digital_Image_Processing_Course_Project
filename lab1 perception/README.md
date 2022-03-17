@@ -176,13 +176,64 @@
 
 ## 感知机——二分类
 
+### 问题说明
+
+二元线性回归，求解二分类问题：
+
+<img src="https://gitee.com/lrk612/md_picture/raw/master/img/20220317190517.png" alt="image-20220317190517444" style="zoom:70%;" />
+
+<center>双属性散点分布如图</center>
+
+### 求解思路
+
+线性拟合：
+
+<img src="https://gitee.com/lrk612/md_picture/raw/master/img/20220317190727.png" alt="image-20220317190727454" style="zoom:50%;" />
+
+损失函数：
+
+<img src="https://gitee.com/lrk612/md_picture/raw/master/img/20220317191345.png" alt="image-20220317191345586" style="zoom:75%;" />
+
+梯度下降优化：
+
+<img src="https://gitee.com/lrk612/md_picture/raw/master/img/20220317191435.png" alt="image-20220317191435734" style="zoom:50%;" />
+
+### 问题&解决
+
+#### 问题一：非线性映射阈值不当
+
+在线性回归的结果基础上，通常套上一个单调递增且可微的非线性函数来映射到目标值，实验PPT中要求：
+
+<img src="https://gitee.com/lrk612/md_picture/raw/master/img/20220317191922.png" alt="image-20220317191922102" style="zoom:50%;" />
+
+<center>阈值为 0</center>
+
+而当我这样做了后，训练结果是这样的：
+
+<img src="https://gitee.com/lrk612/md_picture/raw/master/img/20220317192137.png" alt="image-20220317192137534" style="zoom:60%;" />
+
+<center>P = 55.56%, acc = 56.00%</center>
+
+显然是欠拟合，但无论改变学习率、训练轮数都没有改善，说明是优化算法本身出问题了
+
+与同学讨论并反复思考后确定，由于将无序的分类目标编码为：[0, 1]，并且在计算损失函数时使用的是欧氏距离，所以非线性映射的阈值应当取为 0 和 1 的均值：0.5
+
+另一种修改方法是，用**独热向量**来编码目标值，然后使用曼哈顿距离或标准化欧式距离来计算损失函数
 
 
 
+#### 问题二：batch size 与 学习率
+
+在遇到问题一时，我怀疑是学习时每学习一条样本就更新导致的问题，所以又写了个用全样本批量训练的方法。虽然问题的原因不在于这点，但却在实践中认识到 batch size 与 学习率之间的匹配关系，当 batch size 过大时，如果学习率太高就永远无法收敛到较优解；同样，batch size 较小时，学习率如果也太小就会导致收敛过慢，需要增加训练轮数
 
 
 
+### 最终效果
 
+<img src="https://gitee.com/lrk612/md_picture/raw/master/img/20220317195025.gif" alt="show" style="zoom:60%;" />
 
+<center>实时效果</center>
 
+<img src="https://gitee.com/lrk612/md_picture/raw/master/img/20220317195059.png" alt="image-20220317195059180" style="zoom:60%;" />
 
+<center>loss 值</center>
