@@ -1,6 +1,6 @@
 # 任务
 
-本次作业是搭建的简易深度学习框架 my_torch，具体内容包括：
+本次作业是搭建的简易深度学习框架 `my_torch`，具体内容包括：
 
 - [ ] Modules
     - [ ] linear
@@ -23,6 +23,9 @@
 - [ ] Others
     - [ ] regularization
 
+使用 mytorch 框架，实现 half_moon 数据集二分类问题：`half_moon_mytorch.py`
+
+用pytorch 框架实现的基本效果详见：`half_moon_torch.py`
 
 &nbsp;
 
