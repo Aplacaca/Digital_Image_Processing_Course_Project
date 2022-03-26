@@ -8,10 +8,10 @@ from tqdm import tqdm
 from sklearn.model_selection import train_test_split
 
 np.random.seed(729)
-lr = 0.005
+lr = 0.01
 epoch_num = 100
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-model_path = "model.ckpt"
+model_path = "torch_model.ckpt"
 
 
 class Net(nn.Module):
@@ -23,6 +23,7 @@ class Net(nn.Module):
         self.fc2 = torch.nn.Linear(in_features=5, out_features=5)
         self.fc3 = torch.nn.Linear(in_features=5, out_features=1)
         self.relu = torch.nn.ReLU()
+        self.sigmoid = torch.nn.Sigmoid()
 
         # init weights
         nn.init.normal_(self.fc1.weight, std=0.01)
@@ -33,7 +34,7 @@ class Net(nn.Module):
         out = self.fc1(x)
         out = self.relu(out)
         out = self.fc2(out)
-        out = self.relu(out)
+        out = self.sigmoid(out)
         out = self.fc3(out)
         out = out.squeeze(-1)
 
@@ -41,7 +42,7 @@ class Net(nn.Module):
 
 
 def generate_data():
-    X, y = datasets.make_moons(n_samples=1000, shuffle=True, noise=0.2)
+    X, y = datasets.make_moons(n_samples=500, shuffle=True, noise=0.2)
     return X, y
 
 
@@ -84,7 +85,8 @@ def main():
     # show_data(x_test, y_test)
 
     model = Net(X.shape[1]).to(device)
-    optimizer = torch.optim.SGD(model.parameters(), lr)
+    optimizer = torch.optim.SGD(
+        model.parameters(), lr, momentum=0.9, weight_decay=0.01)
     criterion = nn.MSELoss().to(device)
 
     # Train
@@ -106,10 +108,10 @@ def main():
             loss.backward()
             optimizer.step()
 
-        if 0.5*P+0.5*R > 0.5*P_+0.5*R_:
-            torch.save(model.state_dict(), model_path)
-            P_ = P
-            R_ = R
+        # if 0.5*P+0.5*R > 0.5*P_+0.5*R_:
+        #     torch.save(model.state_dict(), model_path)
+        #     P_ = P
+        #     R_ = R
 
     # Test
     P, R = test(model, x_test, y_test)
