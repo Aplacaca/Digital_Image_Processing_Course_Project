@@ -20,6 +20,9 @@
     - [ ] zeros_like
     - [ ] from_array
     - [ ] random
+- [ ] Others
+    - [ ] regularization
+
 
 &nbsp;
 
