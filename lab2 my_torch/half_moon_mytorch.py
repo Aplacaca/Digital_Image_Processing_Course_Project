@@ -9,7 +9,7 @@ from sklearn.model_selection import train_test_split
 
 np.random.seed(729)
 lr = 0.01
-epoch_num = 100
+epoch_num = 300
 # device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 model_path = "mytorch_model.ckpt"
 
@@ -19,9 +19,9 @@ class Net(mytorch.Module):
         super(Net, self).__init__()
 
         # layers
-        self.fc1 = mytorch.Linear(in_features=input_size, out_features=5)
-        self.fc2 = mytorch.Linear(in_features=5, out_features=5)
-        self.fc3 = mytorch.Linear(in_features=5, out_features=1)
+        self.fc1 = mytorch.Linear(in_features=input_size, out_features=6)
+        self.fc2 = mytorch.Linear(in_features=6, out_features=6)
+        self.fc3 = mytorch.Linear(in_features=6, out_features=1)
         self.relu = mytorch.Functional.ReLU()
         self.sigmoid = mytorch.Functional.Sigmoid()
 
@@ -39,7 +39,7 @@ class Net(mytorch.Module):
 
 
 def generate_data():
-    X, y = datasets.make_moons(n_samples=500, shuffle=True, noise=0.2)
+    X, y = datasets.make_moons(n_samples=500, shuffle=True, noise=0.5)
     return X, y
 
 

@@ -104,6 +104,9 @@ class MSELoss(Loss):
         return self
 
     def backward(self, model):
+        """
+        Must change when Network structure changes
+        """
 
         dy = self.x - self.y
         dy = model.fc3.backward(dy)

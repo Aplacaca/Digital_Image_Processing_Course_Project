@@ -34,6 +34,6 @@ class SGD(Optim):
     def _update_weight(self, tensor):
 
         if np.random.random() < 0.8:  # random update
-            # v = self.momentum * tensor + self.lr * tensor.grad
-            v = self.lr * tensor.grad
+            v = self.momentum * tensor + self.lr * tensor.grad
+            # v = self.lr * tensor.grad
             tensor -= v
