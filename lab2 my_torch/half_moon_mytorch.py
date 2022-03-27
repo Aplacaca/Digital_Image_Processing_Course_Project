@@ -11,7 +11,7 @@ np.random.seed(729)
 lr = 0.01
 epoch_num = 100
 # device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-model_path = "torch_model.ckpt"
+model_path = "mytorch_model.ckpt"
 
 
 class Net(mytorch.Module):
@@ -66,6 +66,14 @@ def test(model, x_test, y_test):
     Return the precise and recall on the test dataset
     """
 
+    predict = []
+    for i, (x, y) in enumerate(zip(x_test, y_test)):
+        x = my_tensor.from_array(x)
+        y = my_tensor.from_array(np.array(y))
+        predict.append(model.forward(x))
+    P, R = mertix(predict, y_test)
+    return P, R
+
 
 def main():
 
@@ -75,26 +83,26 @@ def main():
     # show_data(x_test, y_test)
 
     model = Net(X.shape[1])
-    optimizer = mytorch.Optim.SGD(model.parameters, lr, momentum=0.9)
-    criterion = mytorch.Functional.MSELoss()
+    optimizer = mytorch.Optim.SGD(lr=lr, momentum=0.9)
+    criterion = mytorch.Functional.MSELoss(n_classes=2)
 
     # Train
-    P_, R_ = 0, 0
-    for epoch in tqdm(range(epoch_num)):
-        # print("Epoch[%d]" % epoch)
-        P, R = test(model, x_test, y_test)
-
+    for epoch in range(epoch_num):
         for _, (x, y) in enumerate(zip(x_train, y_train)):
-            x = my_tensor.tensor(x)
-            y = my_tensor.tensor(y)
+            x = my_tensor.from_array(x)
+            y = my_tensor.from_array(np.array(y))
 
             # Forward Pass
             output = model.forward(x)
             loss = criterion(output, y)
 
             # Backward and Optimize
-            loss.backward()
-            optimizer.step()
+            loss.backward(model)
+            optimizer.step(model.parameters)
+
+        if epoch % 10 == 1:
+            P, R = test(model, x_test, y_test)
+            print("Precise: %.2f%%   Recall: %.2f%%" % (P*100, R*100))
 
     # Test
     P, R = test(model, x_test, y_test)

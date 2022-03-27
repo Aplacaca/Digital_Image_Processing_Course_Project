@@ -1,46 +1,63 @@
+import numpy as np
 from .Modules import Module
 
 
 class Sigmoid(Module):
 
     def forward(self, x):
+        """Forward propagation of Sigmoid.
 
-        # TODO Implement forward propogation
-        # of sigmoid function.
+        Args:
+            x: input of shape (N, L_in).
+        Returns:
+            out: output of shape (N, L_out).
+        """
 
-        ...
+        self.x = x
 
-        # End of todo
+        return 1/(1+np.exp(-x))
 
     def backward(self, dy):
+        """Backward propagation of Sigmoid.
 
-        # TODO Implement backward propogation
-        # of sigmoid function.
+        Args:
+            dy: output delta of shape (N, L_out).
+        Returns:
+            dx: input delta of shape (N, L_in).
+        """
 
-        ...
-
-        # End of todo
+        return dy * np.exp(-self.x)/((1+np.exp(-self.x))**2)
 
 
 class ReLU(Module):
 
     def forward(self, x):
+        """Forward propagation of ReLU.
 
-        # TODO Implement forward propogation
-        # of ReLU function.
+        Args:
+            x: input of shape (N, L_in).
+        Returns:
+            out: output of shape (N, L_out).
+        """
 
-        ...
+        self.x = x
 
-        # End of todo
+        return np.where(x > 0, x, 0)
 
     def backward(self, dy):
+        """Backward propagation of Sigmoid.
 
-        # TODO Implement backward propogation
-        # of ReLU function.
+        Args:
+            dy: output delta of shape (N, L_out).
+        Returns:
+            dx: input delta of shape (N, L_in).
+        """
 
-        ...
+        for i in range(dy.shape[1]):
+            if self.x[i] < 0:
+                dy[0, i] = 0
 
-        # End of todo
+        return dy
 
 
 class Loss:
@@ -72,18 +89,25 @@ class Loss:
 class MSELoss(Loss):
 
     def __call__(self, predict, targets):
+        """Forward propagation of MSELoss.
 
-        # TODO Calculate MSE loss.
+        Args:
+            predict: input of shape (1).
+            targets: input of shape (1).
+        Returns:
+            loss: output of shape (1).
+        """
+        self.x = predict
+        self.y = targets
+        self.loss = 0.5*np.mean((targets - predict)**2)
 
-        ...
+        return self
 
-        # End of todo
+    def backward(self, model):
 
-    def backward(self):
-
-        # TODO Implement backward propogation
-        # of mean square error loss function.
-
-        ...
-
-        # End of todo
+        dy = self.x - self.y
+        dy = model.fc3.backward(dy)
+        dy = model.sigmoid.backward(dy)
+        dy = model.fc2.backward(dy)
+        dy = model.relu.backward(dy)
+        dy = model.fc1.backward(dy)

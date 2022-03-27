@@ -1,4 +1,5 @@
 import numpy as np
+from copy import deepcopy
 
 
 class Tensor(np.ndarray):
@@ -16,20 +17,21 @@ def tensor(shape):
 def from_array(arr):
     """Convert the input array-like to a tensor."""
     t = arr.view(Tensor)
-    t.grad = None
+    t.grad = deepcopy(t)
+    t.grad.fill(1)
     return t
 
 
 def zeros(shape):
     """Return a new tensor of given shape, filled with zeros."""
-    t = Tensor(shape)
+    t = ones(shape)
     t.fill(0)
     return t
 
 
 def ones(shape):
     """Return a new tensor of given shape, filled with ones."""
-    t = Tensor(shape)
+    t = tensor(shape)
     t.fill(1)
     return t
 

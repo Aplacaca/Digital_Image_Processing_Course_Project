@@ -1,26 +1,25 @@
+import numpy as np
 from .my_tensor import Tensor
-from .Modules import Module
 
 
 class Optim(object):
 
-    def __init__(self, module, lr):
-        self.module = module
+    def __init__(self, lr):
         self.lr = lr
 
-    def step(self):
-        self._step_module(self.module)
+    def step(self, module):
+        self._step_module(module)
 
     def _step_module(self, module):
-
-        # TODO Traverse the attributes of `self.module`,
+        # Traverse the attributes of `self.module`,
         # if is `Tensor`, call `self._update_weight()`,
         # else if is `Module` or `List` of `Module`,
         # call `self._step_module()` recursively.
 
-        ...
-
-        # End of todo
+        if type(module) == Tensor:
+            self._update_weight(module)
+        elif type(module) == list:
+            [self._step_module(module[i]) for i in range(len(module))]
 
     def _update_weight(self, tensor):
         tensor -= self.lr * tensor.grad
@@ -28,15 +27,13 @@ class Optim(object):
 
 class SGD(Optim):
 
-    def __init__(self, module, lr, momentum: float = 0):
-        super(SGD, self).__init__(module, lr)
+    def __init__(self, lr, momentum: float = 0):
+        super(SGD, self).__init__(lr)
         self.momentum = momentum
 
     def _update_weight(self, tensor):
 
-        # TODO Update the weight of tensor
-        # in SGD manner.
-
-        ...
-
-        # End of todo
+        if np.random.random() < 0.8:  # random update
+            # v = self.momentum * tensor + self.lr * tensor.grad
+            v = self.lr * tensor.grad
+            tensor -= v
