@@ -6,6 +6,8 @@ import matplotlib.pyplot as plt
 from sklearn import datasets
 from tqdm import tqdm
 from sklearn.model_selection import train_test_split
+from mytorch.myglobal import graph
+
 
 np.random.seed(729)
 lr = 0.01
@@ -14,7 +16,7 @@ epoch_num = 300
 model_path = "mytorch_model.ckpt"
 
 
-class Net(mytorch.Module):
+class Net(mytorch.Model):
     def __init__(self, input_size=2):
         super(Net, self).__init__()
 
@@ -28,13 +30,13 @@ class Net(mytorch.Module):
         self.parameters = [self.fc1.w, self.fc2.w, self.fc3.w]
 
     def forward(self, x):
+        # import pdb;pdb.set_trace()
         out = self.fc1(x)
         out = self.relu(out)
         out = self.fc2(out)
         out = self.sigmoid(out)
         out = self.fc3(out)
         out = out.squeeze(-1)
-
         return out
 
 
@@ -97,7 +99,8 @@ def main():
             loss = criterion(output, y)
 
             # Backward and Optimize
-            loss.backward(model)
+            model.backward(loss.backward())
+            # loss.backward(model)
             optimizer.step(model.parameters)
 
         if epoch % 10 == 1:
