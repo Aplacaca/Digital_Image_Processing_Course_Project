@@ -1,3 +1,4 @@
+from copy import deepcopy
 import numpy as np
 from .my_tensor import Tensor
 
@@ -34,10 +35,12 @@ class SGD(Optim):
 
     def _update_weight(self, tensor):
         if self.momentum > 0:
-            
-            if self.dampening > 0:
-                ...
-        
+            if tensor.momentum_grad is None:
+                tensor.momentum_grad = deepcopy(self.grad)
+            else:
+                tensor.momentum_grad = self.momentum * tensor.momentum_grad + (1-self.dampening) * tensor.grad
+                
+            tensor.grad = tensor.momentum_grad        
         if np.random.random() < 0.8:  # random update
             # v = self.momentum * tensor + self.lr * tensor.grad
             v = self.lr * tensor.grad
