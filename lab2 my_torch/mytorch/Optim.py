@@ -27,13 +27,19 @@ class Optim(object):
 
 class SGD(Optim):
 
-    def __init__(self, lr, momentum: float = 0):
+    def __init__(self, lr, momentum: float = 0, dampening: float = 0):
         super(SGD, self).__init__(lr)
         self.momentum = momentum
+        self.dampening = dampening
 
     def _update_weight(self, tensor):
-
+        if self.momentum > 0:
+            
+            if self.dampening > 0:
+                ...
+        
         if np.random.random() < 0.8:  # random update
-            v = self.momentum * tensor + self.lr * tensor.grad
-            # v = self.lr * tensor.grad
+            # v = self.momentum * tensor + self.lr * tensor.grad
+            v = self.lr * tensor.grad
             tensor -= v
+        
