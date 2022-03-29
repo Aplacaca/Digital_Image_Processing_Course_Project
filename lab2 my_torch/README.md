@@ -3,23 +3,23 @@
 本次作业是搭建的简易深度学习框架 `my_torch`，具体内容包括：
 
 - [ ] Modules
-    - [ ] linear
+    - [x] linear
 - [ ] Functional
-    - [ ] relu
-    - [ ] sigmod
+    - [x] relu
+    - [x] sigmod
     - [ ] ……
 - [ ] Loss Function
-    - [ ] MSELoss
+    - [x] MSELoss
     - [ ] ……
 - [ ] Optim
-    - [ ] SGD
+    - [x] SGD
     - [ ] ……
 - [ ] my_tensor 
-    - [ ] ones
-    - [ ] zeros
-    - [ ] zeros_like
-    - [ ] from_array
-    - [ ] random
+    - [x] ones
+    - [x] zeros
+    - [x] zeros_like
+    - [x] from_array
+    - [x] random
 - [ ] Others
     - [ ] regularization
 
@@ -55,10 +55,10 @@
     - 输入：input_size，out_size
     - 属性：网络权重 w = tensor(input_size+1, output_size)
     - 方法：
-        - forward()：计算并保存输出
+        - forward()：计算并保存输入值
         - backward()：根据 `上回输出` 和 `传入的dy` 计算梯度
 - 定义 mytorch.functional 中的 Relu、Sigmod 对象
-    - forward()：计算并保存输出
+    - forward()：计算并保存输入值
     - backward()：根据 `上回输出` 和 `传入的dy` 计算梯度
 
 ## 损失函数：Loss Function
