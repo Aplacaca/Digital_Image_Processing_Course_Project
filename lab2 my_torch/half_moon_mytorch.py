@@ -26,7 +26,6 @@ class Net(mytorch.Model):
         self.fc2 = mytorch.Linear(in_features=6, out_features=6)
         self.fc3 = mytorch.Linear(in_features=6, out_features=1)
         self.relu = mytorch.Functional.ReLU()
-        self.sigmoid = mytorch.Functional.Sigmoid()
 
         self.parameters = [self.fc1.w, self.fc2.w, self.fc3.w]
 
@@ -35,7 +34,7 @@ class Net(mytorch.Model):
         out = self.fc1(x)
         out = self.relu(out)
         out = self.fc2(out)
-        out = self.sigmoid(out)
+        out = self.relu(out)
         out = self.fc3(out)
         out = out.squeeze(-1)
         return out

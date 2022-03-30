@@ -23,7 +23,6 @@ class Net(nn.Module):
         self.fc2 = torch.nn.Linear(in_features=5, out_features=5)
         self.fc3 = torch.nn.Linear(in_features=5, out_features=1)
         self.relu = torch.nn.ReLU()
-        self.sigmoid = torch.nn.Sigmoid()
 
         # init weights
         nn.init.normal_(self.fc1.weight, std=0.01)
@@ -34,7 +33,7 @@ class Net(nn.Module):
         out = self.fc1(x)
         out = self.relu(out)
         out = self.fc2(out)
-        out = self.sigmoid(out)
+        out = self.relu(out)
         out = self.fc3(out)
         out = out.squeeze(-1)
 
