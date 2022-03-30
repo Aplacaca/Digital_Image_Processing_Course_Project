@@ -103,14 +103,28 @@ class MSELoss(Loss):
 
         return self
 
-    def backward(self, model):
+    def backward(self,):
         """
         Must change when Network structure changes
         """
-
+        # import pdb;pdb.set_trace()
         dy = self.x - self.y
-        dy = model.fc3.backward(dy)
-        dy = model.sigmoid.backward(dy)
-        dy = model.fc2.backward(dy)
-        dy = model.relu.backward(dy)
-        dy = model.fc1.backward(dy)
+        return dy
+        # dy = model.fc3.backward(dy) # (1, 6)
+        # dy = model.sigmoid.backward(dy) # (1, 6)
+        # dy = model.fc2.backward(dy) # (1, 6)
+        # dy = model.relu.backward(dy) # (1, 6)
+        # dy = model.fc1.backward(dy) # (1, 2)
+        
+    # def backward(self,model):
+    #     """
+    #     Must change when Network structure changes
+    #     """
+    #     # import pdb;pdb.set_trace()
+    #     dy = self.x - self.y
+    #     # return dy
+    #     dy = model.fc3.backward(dy) # (1, 6)
+    #     dy = model.sigmoid.backward(dy) # (1, 6)
+    #     dy = model.fc2.backward(dy) # (1, 6)
+    #     dy = model.relu.backward(dy) # (1, 6)
+    #     dy = model.fc1.backward(dy) # (1, 2)

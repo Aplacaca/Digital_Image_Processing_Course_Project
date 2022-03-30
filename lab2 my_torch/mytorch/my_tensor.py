@@ -7,6 +7,7 @@ class Tensor(np.ndarray):
 
     def __init__(self, *args, **kwargs):
         self.grad = None
+        self.momentum_grad = None
 
 
 def tensor(shape):
@@ -19,6 +20,8 @@ def from_array(arr):
     t = arr.view(Tensor)
     t.grad = deepcopy(t)
     t.grad.fill(1)
+    t.momentum_grad = deepcopy(t)
+    t.momentum_grad.fill(1)
     return t
 
 
