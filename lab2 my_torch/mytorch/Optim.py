@@ -38,11 +38,10 @@ class SGD(Optim):
             if tensor.momentum_grad is None:
                 tensor.momentum_grad = deepcopy(self.grad)
             else:
-                tensor.momentum_grad = self.momentum * tensor.momentum_grad + (1-self.dampening) * tensor.grad
-                
-            tensor.grad = tensor.momentum_grad        
+                tensor.momentum_grad = self.momentum * \
+                    tensor.momentum_grad + (1-self.dampening) * tensor.grad
+
+            tensor.grad = tensor.momentum_grad
         if np.random.random() < 0.8:  # random update
-            # v = self.momentum * tensor + self.lr * tensor.grad
             v = self.lr * tensor.grad
             tensor -= v
-        
