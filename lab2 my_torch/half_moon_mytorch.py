@@ -5,13 +5,14 @@ import numpy as np
 import matplotlib.pyplot as plt
 from sklearn import datasets
 from tqdm import tqdm
+from utils import setup_seed
 from sklearn.model_selection import train_test_split
 from mytorch.myglobal import graph
 
 
-np.random.seed(729)
+setup_seed(729)
 lr = 0.01
-epoch_num = 300
+epoch_num = 500
 # device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 model_path = "mytorch_model.ckpt"
 
@@ -41,7 +42,7 @@ class Net(mytorch.Model):
 
 
 def generate_data():
-    X, y = datasets.make_moons(n_samples=500, shuffle=True, noise=0.5)
+    X, y = datasets.make_moons(n_samples=500, shuffle=True, noise=0.2)
     return X, y
 
 
@@ -85,7 +86,7 @@ def main():
     # show_data(x_test, y_test)
 
     model = Net(X.shape[1])
-    optimizer = mytorch.Optim.SGD(lr=lr, momentum=0.9)
+    optimizer = mytorch.Optim.SGD(lr=lr, momentum=1e-5)
     criterion = mytorch.Functional.MSELoss(n_classes=2)
 
     # Train
