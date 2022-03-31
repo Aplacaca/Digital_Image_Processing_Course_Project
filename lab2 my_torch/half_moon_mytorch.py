@@ -1,17 +1,15 @@
-import ipdb
 import mytorch
 from mytorch import my_tensor
 import numpy as np
 import matplotlib.pyplot as plt
 from sklearn import datasets
-from tqdm import tqdm
 from utils import setup_seed
 from sklearn.model_selection import train_test_split
-from mytorch.myglobal import graph
 
 
 setup_seed(729)
-lr = 0.01
+lr = 0.001
+momentum = 0.9
 epoch_num = 500
 # device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 model_path = "mytorch_model.ckpt"
@@ -41,7 +39,7 @@ class Net(mytorch.Model):
 
 
 def generate_data():
-    X, y = datasets.make_moons(n_samples=500, shuffle=True, noise=0.2)
+    X, y = datasets.make_moons(n_samples=1000, shuffle=True, noise=0.2)
     return X, y
 
 
@@ -82,10 +80,10 @@ def main():
     X, y = generate_data()
     x_train, x_test, y_train, y_test = train_test_split(
         X, y, test_size=0.1, shuffle=True)
-    # show_data(x_test, y_test)
+    show_data(x_test, y_test)
 
     model = Net(X.shape[1])
-    optimizer = mytorch.Optim.SGD(lr=lr, momentum=1e-5)
+    optimizer = mytorch.Optim.SGD(lr=lr, momentum=momentum)
     criterion = mytorch.Functional.MSELoss(n_classes=2)
 
     # Train
@@ -100,10 +98,10 @@ def main():
 
             # Backward and Optimize
             model.backward(loss.backward())
-            # loss.backward(model)
+
             optimizer.step(model.parameters)
 
-        if epoch % 10 == 1:
+        if epoch % 20 == 1:
             P, R = test(model, x_test, y_test)
             print("Precise: %.2f%%   Recall: %.2f%%" % (P*100, R*100))
 

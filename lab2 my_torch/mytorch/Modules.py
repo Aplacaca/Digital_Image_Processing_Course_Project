@@ -1,12 +1,6 @@
-from abc import abstractmethod
-from tkinter.messagebox import NO
-from turtle import shape
-from typing import OrderedDict
 import numpy as np
 from . import my_tensor
-# from .myglobal import all_forward_dict
 from mytorch.myglobal import graph
-
 
 
 class Module(object):
@@ -16,17 +10,18 @@ class Module(object):
     def __init__(self) -> None:
         """If a module behaves different between training and testing,
         its init method should inherit from this one."""
+
         self.training = True
 
     def __call__(self, x: np.ndarray) -> np.ndarray:
         """Defines calling forward method at every call.
         Should not be overridden by subclasses.
         """
-        # import pdb;pdb.set_trace()
+
         if self not in graph.dict.values():
             idx = len(list(graph.dict.keys()))
             graph.dict[str(idx)] = self
-        # add this node to graph
+
         return self.forward(x)
 
     def forward(self, x: np.ndarray) -> np.ndarray:
@@ -38,13 +33,13 @@ class Module(object):
     def backward(self, dy: np.ndarray) -> np.ndarray:
         """Defines the backward propagation of the module.
         """
-        return dy
-    
+        ...
+
     def get_name(self) -> str:
         name = self.__class__.__name__
-        return name 
-    
-    
+        return name
+
+
 class Model(Module):
     """Base class for all neural network modules.
     """
@@ -68,7 +63,6 @@ class Model(Module):
         for op_idx in graph.dict.keys():
             x = graph.dict[op_idx].forward(x)
 
-
     def backward(self, dy: np.ndarray) -> np.ndarray:
         """Defines the backward propagation of the module.
         """
@@ -78,11 +72,10 @@ class Model(Module):
             # print("in "+op_idx+" backward")
             dy = graph.dict[op_idx].backward(dy)
         return dy
-    
+
     def get_name(self) -> str:
         name = self.__class__.__name__
-        return name 
-
+        return name
 
 
 class Linear(Module):

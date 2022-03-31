@@ -1,1 +1,0 @@
-from .mytorch import myglobal
