@@ -1,3 +1,4 @@
+from typing import OrderedDict
 import numpy as np
 from . import my_tensor
 from mytorch.myglobal import graph
@@ -18,9 +19,9 @@ class Module(object):
         Should not be overridden by subclasses.
         """
 
-        if self not in graph.dict.values():
-            idx = len(list(graph.dict.keys()))
-            graph.dict[str(idx)] = self
+        # if self not in graph.dict.values():
+        idx = len(list(graph.dict.keys()))
+        graph.dict[str(idx)] = self
 
         return self.forward(x)
 
@@ -60,8 +61,9 @@ class Model(Module):
         """Defines the forward propagation of the module performed at every call.
         Should be overridden by all subclasses.
         """
-        for op_idx in graph.dict.keys():
-            x = graph.dict[op_idx].forward(x)
+        graph.flush()
+      
+
 
     def backward(self, dy: np.ndarray) -> np.ndarray:
         """Defines the backward propagation of the module.

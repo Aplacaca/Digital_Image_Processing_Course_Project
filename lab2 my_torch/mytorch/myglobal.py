@@ -4,6 +4,9 @@ from collections import OrderedDict
 class mygraph(object):
     def __init__(self,):
         self.dict = OrderedDict()
+    def flush(self,):
+        del self.dict
+        self.dict = OrderedDict()
 
 
 graph = mygraph()

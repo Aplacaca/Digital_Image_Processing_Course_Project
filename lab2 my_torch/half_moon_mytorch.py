@@ -29,6 +29,7 @@ class Net(mytorch.Model):
 
     def forward(self, x):
         # import pdb;pdb.set_trace()
+        super().forward(x)
         out = self.fc1(x)
         out = self.relu(out)
         out = self.fc2(out)
@@ -97,6 +98,7 @@ def main():
             loss = criterion(output, y)
 
             # Backward and Optimize
+            # import pdb;pdb.set_trace()
             model.backward(loss.backward())
 
             optimizer.step(model.parameters)
