@@ -45,7 +45,7 @@ class ReLU(Module):
         return np.where(x > 0, x, 0)
 
     def backward(self, dy):
-        """Backward propagation of Sigmoid.
+        """Backward propagation of ReLU.
 
         Args:
             dy: output delta of shape (N, L_out).
@@ -53,9 +53,40 @@ class ReLU(Module):
             dx: input delta of shape (N, L_in).
         """
 
-        for i in range(dy.shape[1]):
-            if self.x[i] < 0:
-                dy[0, i] = 0
+        for i in range(dy.shape[0]):
+            for j in range(dy.shape[1]):
+                if self.x[i][j] < 0:
+                    dy[i, j] = 0
+
+        return dy
+
+
+class argmax(Module):
+
+    def forward(self, x):
+        """Forward propagation of ReLU.
+
+        Args:
+            x: input of shape (N, L_in).
+        Returns:
+            out: output of shape (N, 1).
+        """
+        self.x = x
+        self.out = np.argmax(x, axis=1).reshape(-1, 1)
+
+        return self.out
+
+    def backward(self, dy):
+        """Backward propagation of Sigmoid.
+
+        Args:
+            dy: output delta of shape (N, 1).
+        Returns:
+            dx: input delta of shape (N, L_in).
+        """
+        dy = np.zeros_like(self.x)
+        for i in range(self.x.shape[0]):
+            dy[i][self.out[i]] = 1
 
         return dy
 

@@ -3,16 +3,23 @@
 本次作业是搭建的简易深度学习框架 `my_torch`，具体内容包括：
 
 - [ ] Modules
-    - [x] linear
+    - [x] Linear
+    - [ ] Conv2d
 - [ ] Functional
     - [x] relu
     - [x] sigmod
+    - [ ] MaxPool
+    - [ ] AvgPool
+    - [ ] Dropout
     - [ ] ……
 - [ ] Loss Function
     - [x] MSELoss
+    - [ ] CrossEntropyLoss
     - [ ] ……
 - [ ] Optim
     - [x] SGD
+    - [ ] Adam
+    - [ ] Adagrad
     - [ ] ……
 - [ ] my_tensor 
     - [x] ones
@@ -23,9 +30,9 @@
 - [ ] Others
     - [ ] regularization
 
-使用 mytorch 框架，实现 half_moon 数据集二分类问题：`half_moon_mytorch.py`
+使用 mytorch 框架，实现 half_moon 数据集二分类问题：`half_moon_mytorch.py` 和 手写数字图片识别`minst_mytorch.py`
 
-用pytorch 框架实现的基本效果详见：`half_moon_torch.py`
+用pytorch 框架实现的baseline效果详见：`half_moon_torch.py`、`minst_torch.py`
 
 &nbsp;
 

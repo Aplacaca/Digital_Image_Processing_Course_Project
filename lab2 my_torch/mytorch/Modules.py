@@ -1,4 +1,5 @@
 from typing import OrderedDict
+from matplotlib.pyplot import axis
 import numpy as np
 from . import my_tensor
 from mytorch.myglobal import graph
@@ -55,15 +56,13 @@ class Model(Module):
         """Defines calling forward method at every call.
         Should not be overridden by subclasses.
         """
-        pass
+        return self.forward(x)
 
     def forward(self, x: np.ndarray) -> np.ndarray:
         """Defines the forward propagation of the module performed at every call.
         Should be overridden by all subclasses.
         """
         graph.flush()
-      
-
 
     def backward(self, dy: np.ndarray) -> np.ndarray:
         """Defines the backward propagation of the module.
@@ -101,7 +100,6 @@ class Linear(Module):
         Returns:
             out: output of shape (out_features, ).
         """
-
         self.x = x
         out = x.dot(self.w[1:]) + self.w[0]
         return out
@@ -114,10 +112,12 @@ class Linear(Module):
         Returns:
             dx: input delta of shape (L_in).
         """
-        if dy.shape == None:
-            self.w.grad[1:, :] = (self.x.T).dot(dy)
-        else:
-            self.w.grad[1:, :] = self.x.T.reshape(-1, 1) * dy
-        self.w.grad[0] = dy * 1
+
+        # if dy.shape == None:
+        self.w.grad[1:, :] = (self.x.T).dot(dy)
+        # else:
+        #     self.w.grad[1:, :] = self.x.T.reshape(-1, 1) * dy
+        # self.w.grad[0] = dy * 1
+        self.w.grad[0] = dy.sum(axis=0) * 1
 
         return dy.dot(self.w[1:].T)
