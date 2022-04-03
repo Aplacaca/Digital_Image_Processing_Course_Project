@@ -22,9 +22,9 @@ learning_rate = 1e-4
 
 # MNIST dataset
 train_dataset = torchvision.datasets.MNIST(
-    root="../data", train=True, transform=transforms.ToTensor(), download=True)
+    root="./data", train=True, transform=transforms.ToTensor(), download=True)
 test_dataset = torchvision.datasets.MNIST(
-    root="../data", train=False, transform=transforms.ToTensor())
+    root="./data", train=False, transform=transforms.ToTensor())
 
 # Data Loader
 train_loader = torch.utils.data.DataLoader(dataset=train_dataset,
