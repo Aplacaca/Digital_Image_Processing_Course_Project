@@ -1,3 +1,4 @@
+import utils
 import torch
 import numpy as np
 import matplotlib.pyplot as plt
@@ -6,7 +7,7 @@ from sklearn import datasets
 from tqdm import tqdm
 from sklearn.model_selection import train_test_split
 
-np.random.seed(729)
+utils.setup_seed(729)
 lr = 0.01
 epoch_num = 100
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")

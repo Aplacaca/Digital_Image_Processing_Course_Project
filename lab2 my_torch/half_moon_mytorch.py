@@ -1,13 +1,13 @@
+import utils
 import mytorch
 from mytorch import my_tensor
 import numpy as np
 import matplotlib.pyplot as plt
 from sklearn import datasets
-from utils import setup_seed
 from sklearn.model_selection import train_test_split
 
 
-setup_seed(729)
+utils.setup_seed(729)
 lr = 0.001
 momentum = 0.9
 epoch_num = 500
@@ -28,7 +28,6 @@ class Net(mytorch.Model):
         self.parameters = [self.fc1.w, self.fc2.w, self.fc3.w]
 
     def forward(self, x):
-        # import pdb;pdb.set_trace()
         out = self.fc1(x)
         out = self.relu(out)
         out = self.fc2(out)
@@ -49,29 +48,16 @@ def show_data(X, y):
     plt.show()
 
 
-def mertix(predict, y):
-    index = (np.array(predict) > 0.5).reshape(-1)
-    if index.sum() != 0:
-        P = y[index].sum() / index.sum()
-        R = y[index].sum() / y.sum()
-    else:
-        P = 0
-        R = 0
-
-    return P, R
-
-
 def test(model, x_test, y_test):
     """
     Return the precise and recall on the test dataset
     """
-
     predict = []
     for i, (x, y) in enumerate(zip(x_test, y_test)):
         x = my_tensor.from_array(x)
         y = my_tensor.from_array(np.array(y))
         predict.append(model.forward(x))
-    P, R = mertix(predict, y_test)
+    P, R = utils.mertix(predict, y_test)
     return P, R
 
 
@@ -98,7 +84,6 @@ def main():
 
             # Backward and Optimize
             model.backward(loss.backward())
-
             optimizer.step(model.parameters)
 
         if epoch % 20 == 1:

@@ -3,16 +3,23 @@
 本次作业是搭建的简易深度学习框架 `my_torch`，具体内容包括：
 
 - [ ] Modules
-    - [x] linear
+    - [x] Linear
+    - [ ] Conv2d
 - [ ] Functional
     - [x] relu
     - [x] sigmod
+    - [ ] MaxPool
+    - [ ] AvgPool
+    - [ ] Dropout
     - [ ] ……
 - [ ] Loss Function
     - [x] MSELoss
+    - [ ] CrossEntropyLoss
     - [ ] ……
 - [ ] Optim
     - [x] SGD
+    - [ ] Adam
+    - [ ] Adagrad
     - [ ] ……
 - [ ] my_tensor 
     - [x] ones
