@@ -1,6 +1,7 @@
 import utils
 import mytorch
 from mytorch import my_tensor
+from mytorch.my_tensor import Tensor
 import numpy as np
 import matplotlib.pyplot as plt
 from sklearn import datasets
@@ -63,6 +64,27 @@ def test(model, x_test, y_test):
     return P, R
 
 
+def get_batches(inputs, targets, batch_size=16, shuffle=True): 
+    	#inputs相当于X，targets相当于Y
+        length = len(inputs)
+        if shuffle: #shuffle 随机打乱
+            index = np.arange(length)
+            np.random.shuffle(index)
+        else:
+            index = np.arange(length)
+        start_idx = 0
+        while (start_idx < length):
+            end_idx = min(length, start_idx + batch_size)
+            excerpt = index[start_idx:end_idx]
+            X = inputs[excerpt]
+            Y = targets[excerpt]
+            # import pdb;pdb.set_trace()
+            Y = np.expand_dims(Y, -1)
+            yield my_tensor.from_array(X), my_tensor.from_array(Y)
+            start_idx += batch_size
+            
+
+
 def main():
 
     X, y = generate_data()
@@ -76,7 +98,9 @@ def main():
 
     # Train
     for epoch in range(epoch_num):
-        for _, (x, y) in enumerate(zip(x_train, y_train)):
+        
+        for x, y in get_batches(x_train, y_train, batch_size=16):
+                       
             x = my_tensor.from_array(x)
             y = my_tensor.from_array(np.array(y))
 
@@ -85,7 +109,6 @@ def main():
             loss = criterion(output, y)
 
             # Backward and Optimize
-            # import pdb;pdb.set_trace()
             model.backward(loss.backward())
             optimizer.step(model.parameters)
 

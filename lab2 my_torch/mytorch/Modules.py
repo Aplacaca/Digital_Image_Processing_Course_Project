@@ -101,7 +101,9 @@ class Linear(Module):
             out: output of shape (out_features, ).
         """
         self.x = x
-        out = x.dot(self.w[1:]) + self.w[0]
+        if len(self.x.shape) < 2:
+            self.x = np.broadcast_to(self.x,[1,self.x.shape[0]])
+        out = self.x.dot(self.w[1:]) + self.w[0]
         return out
 
     def backward(self, dy):
@@ -113,11 +115,16 @@ class Linear(Module):
             dx: input delta of shape (L_in).
         """
 
-        # if dy.shape == None:
+        # import pdb;pdb.set_trace()
+        if len(self.x.shape) < 2:
+            self.x = np.broadcast_to(self.x,[1,self.x.shape[0]]) # (b,n_feature)
+        batch = self.x.shape[0]
+        if dy.shape is None:
+            dy = np.broadcast_to(dy, [batch, self.w.shape[-1]])
+        elif len(dy.shape) < 2:
+            dy = np.reshape(dy, (-1, self.w.shape[-1]))
+            
         self.w.grad[1:, :] = (self.x.T).dot(dy)
-        # else:
-        #     self.w.grad[1:, :] = self.x.T.reshape(-1, 1) * dy
-        # self.w.grad[0] = dy * 1
         self.w.grad[0] = dy.sum(axis=0) * 1
 
         return dy.dot(self.w[1:].T)

@@ -28,6 +28,35 @@ class Optim(object):
 
 class SGD(Optim):
 
+    def __init__(self, lr, momentum: float = 0, dampening: float = 0, nesterov: bool = False):
+        super(SGD, self).__init__(lr)
+        self.momentum = momentum
+        self.dampening = dampening
+        self.nesterov = nesterov
+
+    def _update_weight(self, tensor):
+        
+        # batch_num = tensor.shape[0]
+        # idx = np.random.choice(batch_num,1)
+        # target_batch = tensor[0,]
+        if self.momentum > 0:
+            if tensor.momentum_grad is None:
+                tensor.momentum_grad = deepcopy(self.grad)
+            else:
+                tensor.momentum_grad = self.momentum * \
+                    tensor.momentum_grad + (1-self.dampening) * tensor.grad
+
+            if self.nesterov:
+                tensor.grad = tensor.grad + self.momentum * tensor.momentum_grad
+            else:
+                tensor.grad = tensor.momentum_grad
+                
+        # if np.random.random() < 0.8:  # random update
+        v = self.lr * tensor.grad
+        tensor -= v
+            
+class Adam(Optim):
+
     def __init__(self, lr, momentum: float = 0, dampening: float = 0):
         super(SGD, self).__init__(lr)
         self.momentum = momentum
