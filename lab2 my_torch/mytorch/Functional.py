@@ -39,7 +39,6 @@ class ReLU(Module):
         Returns:
             out: output of shape (N, L_out).
         """
-        # import pdb;pdb.set_trace()
 
         self.x = x
 
@@ -54,12 +53,7 @@ class ReLU(Module):
             dx: input delta of shape (N, L_in).
         """
 
-        # for i in range(dy.shape[0]):
-        #     for j in range(dy.shape[1]):
-        #         if self.x[i][j] < 0:
-        #             dy[i, j] = 0
         dy[self.x < 0] = 0
-        # print(self.x.shape,dy.shape)
 
         return dy
 
@@ -75,7 +69,7 @@ class argmax(Module):
             out: output of shape (N, 1).
         """
         self.x = x
-        self.out = np.argmax(x, axis=1).reshape(-1, 1)
+        self.out = np.argmax(x, axis=1).reshape(-1, 1) - 1
 
         return self.out
 
@@ -139,14 +133,16 @@ class MSELoss(Loss):
 
     def backward(self,):
         """
-        Must change when Network structure changes
+        Backward propagation of MSELoss.
         """
-        # import pdb;pdb.set_trace()
+
         if len(self.x.shape) < 2:
-            self.x = np.expand_dims(self.x,-1)
+            self.x = np.expand_dims(self.x, -1)
         if len(self.y.shape) < 2:
-            self.y = np.expand_dims(self.y,-1)
+            self.y = np.expand_dims(self.y, -1)
+
         dy = self.x - self.y
+
         return dy
         # dy = model.fc3.backward(dy) # (1, 6)
         # dy = model.relu.backward(dy) # (1, 6)
