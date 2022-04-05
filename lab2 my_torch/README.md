@@ -18,8 +18,9 @@
     - [ ] ……
 - [ ] Optim
     - [x] SGD
-    - [ ] Adam
-    - [ ] Adagrad
+    - [x] Adagrad
+    - [x] RMSprop
+    - [x] Adam
     - [ ] ……
 - [ ] my_tensor 
     - [x] ones
@@ -28,6 +29,7 @@
     - [x] from_array
     - [x] random
 - [ ] Others
+    - [ ] cuda
     - [ ] regularization
 
 使用 mytorch 框架，实现 half_moon 数据集二分类问题：`half_moon_mytorch.py` 和 手写数字图片识别`minst_mytorch.py`

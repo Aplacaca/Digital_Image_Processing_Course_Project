@@ -51,7 +51,7 @@ def test(model):
           (len(test_loader), 100*correct/total))
 
 
-# Fully connected neural network with one hidden layer
+# Fully connected neural network with two hidden layers
 class NeuralNet(mytorch.Model):
     def __init__(self, input_size, hidden_size, num_classes):
         super(NeuralNet, self).__init__()
@@ -61,7 +61,7 @@ class NeuralNet(mytorch.Model):
         self.fc2 = mytorch.Linear(hidden_size, hidden_size)
         self.fc3 = mytorch.Linear(hidden_size, num_classes)
 
-        self.parameters = [self.fc1.w, self.fc2.w]
+        self.parameters = [self.fc1.w, self.fc2.w, self.fc3.w]
 
     def forward(self, x):
         out = self.fc1(x)
@@ -78,7 +78,9 @@ model = NeuralNet(input_size, hidden_size, num_classes)
 
 #Loss and Optimizer
 criterion = mytorch.Functional.MSELoss(n_classes=10)
-optimizer = mytorch.Optim.SGD(lr=learning_rate)
+# optimizer = mytorch.Optim.SGD(module_params=model.parameters, lr=learning_rate)
+optimizer = mytorch.Optim.Adam(
+    module_params=model.parameters, lr=learning_rate)
 
 # Train
 total_step = len(train_loader)
@@ -93,7 +95,7 @@ for epoch in range(num_epochs):
 
         # Backward and Optimize
         model.backward(loss.backward())
-        optimizer.step(model.parameters)
+        optimizer.step()
 
         if (i+1) % 100 == 0:
             print('Epoch [%d/%d], Step [%d/%d], Loss: %.4f' %
