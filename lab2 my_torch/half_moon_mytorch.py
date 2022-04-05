@@ -118,7 +118,7 @@ def main():
 
             # Forward Pass
             output = model.forward(x)
-            loss = criterion(output, y)
+            loss = criterion(np.expand_dims(output,-1), y)
 
             # Backward and Optimize
             model.backward(loss.backward())
