@@ -1,12 +1,12 @@
 import utils
-import torch
 import mytorch
 import numpy as np
 from mytorch import my_tensor
 from mytorch.myglobal import graph
+
+import torch
 import torchvision
 import torchvision.transforms as transforms
-
 
 # Random Seed
 utils.setup_seed(729)
@@ -65,6 +65,10 @@ def test(model):
     print('Accuracy of the network on the %d test images: %.4f%%' %
           (len(test_loader), 100*correct/total))
 
+    graph.flush()  # 清除算子图
+
+    return 100*correct/total
+
 
 # Fully connected neural network with two hidden layers
 class NeuralNet(mytorch.Model):
@@ -90,11 +94,17 @@ class NeuralNet(mytorch.Model):
 
 model = NeuralNet(input_size, hidden_size, num_classes)
 
-#Loss and Optimizer
-criterion = mytorch.Functional.CrossEntropy(n_classes=10)
+# #Loss and Optimizer
+# criterion = mytorch.Functional.CrossEntropy(n_classes=10)
+# Loss_fn and Optimizer
+criterion = mytorch.Functional.MSELoss(n_classes=10)
 # optimizer = mytorch.Optim.SGD(module_params=model.parameters, lr=learning_rate)
 optimizer = mytorch.Optim.Adam(
     module_params=model.parameters, lr=learning_rate)
+
+# Visualize
+# Start the server by: `python -m visdom.server`
+vis = utils.Visualizer(env='MNIST_MyTorch')
 
 # Train
 total_step = len(train_loader)
@@ -113,10 +123,12 @@ for epoch in range(num_epochs):
         optimizer.step()
 
         if (i+1) % 100 == 0:
+            vis.plot('loss', loss.loss)
             print('Epoch [%d/%d], Step [%d/%d], Loss: %.4f' %
                   (epoch + 1, num_epochs, i+1, total_step, loss.loss))
 
-    test(model)
+    test_accuracy = test(model)
+    vis.plot('test_accuracy', test_accuracy)
 
 # Save the model checkpoint
 # torch.save(model.state_dict(), 'model.ckpt')
