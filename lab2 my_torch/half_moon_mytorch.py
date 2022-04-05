@@ -108,6 +108,7 @@ def main():
             y = my_tensor.from_array(np.array(y))
 
             # Forward Pass
+            # import pdb;pdb.set_trace()
             output = model.forward(x)
             loss = criterion(np.expand_dims(output,-1), y)
 

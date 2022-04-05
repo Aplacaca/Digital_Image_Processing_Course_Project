@@ -1,6 +1,7 @@
 import utils
 import torch
 import mytorch
+import numpy as np
 from mytorch import my_tensor
 from mytorch.myglobal import graph
 import torchvision
@@ -55,6 +56,9 @@ def test(model):
         labels = my_tensor.from_array(labels.reshape(-1, 1).numpy())
 
         predicted = model(images)
+        graph.flush()
+        # import pdb;pdb.set_trace()
+        predicted = np.expand_dims(np.argmax(predicted, axis = -1), -1)
         total += labels.shape[0]
         correct += (predicted == labels).sum()
 
@@ -70,14 +74,16 @@ class NeuralNet(mytorch.Model):
         # layers
         self.fc1 = mytorch.Linear(input_size, hidden_size)
         self.fc2 = mytorch.Linear(hidden_size, num_classes)
+        self.relu = mytorch.Functional.ReLU()
+        self.softmax = mytorch.Functional.Softmax()
 
         self.parameters = [self.fc1.w, self.fc2.w]
 
     def forward(self, x):
         out = self.fc1(x)
-        out = mytorch.Functional.ReLU()(out)
+        out = self.relu(out)
         out = self.fc2(out)
-        out = mytorch.Functional.argmax()(out)
+        out = self.softmax(out)
 
         return out
 
@@ -85,7 +91,7 @@ class NeuralNet(mytorch.Model):
 model = NeuralNet(input_size, hidden_size, num_classes)
 
 #Loss and Optimizer
-criterion = mytorch.Functional.MSELoss(n_classes=10)
+criterion = mytorch.Functional.CrossEntropy(n_classes=10)
 # optimizer = mytorch.Optim.SGD(module_params=model.parameters, lr=learning_rate)
 optimizer = mytorch.Optim.Adam(
     module_params=model.parameters, lr=learning_rate)

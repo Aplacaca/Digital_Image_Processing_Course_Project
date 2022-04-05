@@ -87,6 +87,45 @@ class argmax(Module):
 
         return dy
 
+class Softmax(Module):
+    
+    def __init__(self, delta=1e-7):
+        self.delta = delta
+        
+    def __call__(self, x):
+        """Forward propagation of Softmax.
+
+        Args:
+            x: input of shape (N, L_in).
+        Returns:
+            out: output of shape (N, L_out).
+        """
+
+        self.x = x
+        max_x = np.max(x, axis=1, keepdims=True)
+        x_cen = x - max_x
+        exp_x = np.exp(x_cen) + self.delta
+        sum_exp = np.sum(exp_x, axis=1, keepdims=True) 
+        self.y = exp_x/sum_exp
+
+        return self.y
+
+    def backward(self, dy):
+        """Backward propagation of Softmax.
+
+        Args:
+            dy: output delta of shape (N, L_out).
+        Returns:
+            dx: input delta of shape (N, L_in).
+        """
+        # import pdb;pdb.set_trace()
+        a1 = np.expand_dims(self.y, -1)
+        a2 = a1.transpose(0,2,1)
+        a3 = np.einsum('ijk,ikn->ij',a1,a2)
+        a3 = self.y - a3
+        return dy.multiply(a3)
+        
+
 
 class Loss:
     """
@@ -151,45 +190,7 @@ class MSELoss(Loss):
         # dy = model.fc1.backward(dy) # (1, 2)
         
         
-class Softmax(Module):
-    
-    def __init__(self, delta=1e-7):
-        self.delta = delta
-        
-    def forward(self, x):
-        """Forward propagation of Softmax.
 
-        Args:
-            x: input of shape (N, L_in).
-        Returns:
-            out: output of shape (N, L_out).
-        """
-
-        self.x = x
-        max_x = np.max(x, axis=1, keepdims=True)
-        x_cen = x - max_x
-        exp_x = np.exp(x_cen) + self.delta
-        sum_exp = np.sum(exp_x, axis=1, keepdims=True) 
-        self.y = exp_x/sum_exp
-
-        return self.y
-
-    def backward(self, dy):
-        """Backward propagation of Softmax.
-
-        Args:
-            dy: output delta of shape (N, L_out).
-        Returns:
-            dx: input delta of shape (N, L_in).
-        """
-        # import pdb;pdb.set_trace()
-        a1 = np.expand_dims(self.y, -1)
-        a2 = a1.transpose(0,2,1)
-        a3 = np.einsum('ijk,ikn->ij',a1,a2)
-        a3 = self.y - a3
-        
-        return dy.dot(a3)
-        
 class CrossEntropy(Loss):
 
     def __call__(self, predict, targets):
@@ -202,8 +203,13 @@ class CrossEntropy(Loss):
         Returns:
             loss: output of shape (1).
         """
+        # import pdb;pdb.set_trace()
         self.x = predict
-        self.y = targets
+        
+        if targets.shape[-1] == 1:
+            targets = targets.squeeze(-1)
+        I = np.eye(self.n_classes)
+        self.y = I[targets]
         self.delta = 1e-7
         self.loss = np.mean(-np.sum(self.y*np.log(self.x + self.delta),axis = 1))
 

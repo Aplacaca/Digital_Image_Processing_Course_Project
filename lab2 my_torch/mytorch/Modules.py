@@ -20,7 +20,6 @@ class Module(object):
         Should not be overridden by subclasses.
         """
 
-        # if self not in graph.dict.values():
         idx = len(list(graph.dict.keys()))
         graph.dict[str(idx)] = self
 
@@ -62,14 +61,15 @@ class Model(Module):
         """Defines the forward propagation of the module performed at every call.
         Should be overridden by all subclasses.
         """
-        # graph.flush()
-        pass
+        graph.flush()
+        
 
     def backward(self, dy: np.ndarray) -> np.ndarray:
         """Defines the backward propagation of the module.
         """
         op_rev_list = list(graph.dict.keys())[::-1]
         for op_idx in op_rev_list:
+            # print(f"backward in {op_idx} : {graph.dict[op_idx]}")
             dy = graph.dict[op_idx].backward(dy)
 
         graph.flush()  # 每次backward完成后，清空graph.dict
