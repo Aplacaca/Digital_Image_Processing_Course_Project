@@ -62,16 +62,18 @@ class Model(Module):
         """Defines the forward propagation of the module performed at every call.
         Should be overridden by all subclasses.
         """
-        graph.flush()
+        # graph.flush()
+        pass
 
     def backward(self, dy: np.ndarray) -> np.ndarray:
         """Defines the backward propagation of the module.
         """
-        # import pdb;pdb.set_trace()
         op_rev_list = list(graph.dict.keys())[::-1]
         for op_idx in op_rev_list:
-            # print("in "+op_idx+" backward")
             dy = graph.dict[op_idx].backward(dy)
+
+        graph.flush()  # 每次backward完成后，清空graph.dict
+
         return dy
 
     def get_name(self) -> str:
@@ -102,7 +104,7 @@ class Linear(Module):
         """
         self.x = x
         if len(self.x.shape) < 2:
-            self.x = np.broadcast_to(self.x,[1,self.x.shape[0]])
+            self.x = np.broadcast_to(self.x, [1, self.x.shape[0]])
         out = self.x.dot(self.w[1:]) + self.w[0]
         return out
 
@@ -117,13 +119,14 @@ class Linear(Module):
 
         # import pdb;pdb.set_trace()
         if len(self.x.shape) < 2:
-            self.x = np.broadcast_to(self.x,[1,self.x.shape[0]]) # (b,n_feature)
+            self.x = np.broadcast_to(
+                self.x, [1, self.x.shape[0]])  # (b,n_feature)
         batch = self.x.shape[0]
         if dy.shape is None:
             dy = np.broadcast_to(dy, [batch, self.w.shape[-1]])
         elif len(dy.shape) < 2:
             dy = np.reshape(dy, (-1, self.w.shape[-1]))
-            
+
         self.w.grad[1:, :] = (self.x.T).dot(dy)
         self.w.grad[0] = dy.sum(axis=0) * 1
 

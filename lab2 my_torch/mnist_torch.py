@@ -12,19 +12,28 @@ utils.setup_seed(729)
 # Device configuration
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
+# Preprocess
+preprocess = False
+img_size = 12 if preprocess else 28
+transform = transforms.Compose([
+    transforms.CenterCrop(img_size),
+    transforms.ToTensor(),
+    transforms.Normalize(0.5, 0.5)
+]) if preprocess else transforms.ToTensor()
+
 # Hyper-parameters
-input_size = 784
+input_size = 1*img_size*img_size
 hidden_size = 500
 num_classes = 10
-num_epochs = 10
+num_epochs = 20
 batch_size = 100
 learning_rate = 0.001
 
 # MNIST dataset
 train_dataset = torchvision.datasets.MNIST(
-    root="../data", train=True, transform=transforms.ToTensor(), download=True)
+    root="../data", train=True, transform=transform, download=True)
 test_dataset = torchvision.datasets.MNIST(
-    root="../data", train=False, transform=transforms.ToTensor())
+    root="../data", train=False, transform=transform)
 
 # Data Loader
 train_loader = torch.utils.data.DataLoader(dataset=train_dataset,
@@ -56,15 +65,14 @@ optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
 # Train
 total_step = len(train_loader)
 for epoch in range(num_epochs):
+    model.train()
     for i, (images, labels) in enumerate(train_loader):
         # Move tensor to the configuration device
-        images = images.reshape(-1, 28*28).to(device)
+        images = images.reshape(-1, img_size**2).to(device)
         labels = labels.to(device)
 
         # Forward pass
         outputs = model(images)
-        import ipdb
-        ipdb.set_trace()
         loss = criterion(outputs, labels)
 
         # Backward and Optimize
@@ -76,21 +84,21 @@ for epoch in range(num_epochs):
             print('Epoch [{}/{}], Step [{}/{}], Loss: {:.4f}'.
                   format(epoch + 1, num_epochs, i+1, total_step, loss.item()))
 
-# Test
-# In test phase, we don't need to compute gradients (for memory efficiency)
-with torch.no_grad():
-    correct = 0
-    total = 0
-    for images, labels in test_loader:
-        images = images.reshape(-1, 28*28).to(device)
-        labels = labels.to(device)
-        outputs = model(images)
-        _, predicted = torch.max(outputs.data, 1)
-        total += labels.size(0)
-        correct += (predicted == labels).sum().item()
+    # Test
+    model.eval()
+    with torch.no_grad():
+        correct = 0
+        total = 0
+        for images, labels in test_loader:
+            images = images.reshape(-1, img_size**2).to(device)
+            labels = labels.to(device)
+            outputs = model(images)
+            _, predicted = torch.max(outputs.data, 1)
+            total += labels.size(0)
+            correct += (predicted == labels).sum().item()
 
-    print('Accuracy of the network on the 10000 test images: {}%'.format(
-        100*correct/total))
+        print('Accuracy of the network on the 10000 test images: {}%'.format(
+            100*correct/total))
 
 # Save the model checkpoint
 torch.save(model.state_dict(), 'model.ckpt')

@@ -1,6 +1,6 @@
 import numpy as np
 from copy import deepcopy
-from .my_tensor import Tensor
+from .my_tensor import Tensor, zeros
 
 
 # class Optim(object):
@@ -99,6 +99,8 @@ class SGD(Optim):
         v = self.lr * tensor.grad
         tensor -= v
 
+        tensor.grad = zeros(tensor.grad.shape)
+
 
 class Adagrad(Optim):
 
@@ -121,6 +123,8 @@ class Adagrad(Optim):
         clr = self.lr * (1 / (1 + self.lr_decay * (self.steps[i]-1)))
         v = clr * tensor.grad / (np.sqrt(self.grad_square_sum[i]) + self.eps)
         tensor -= v
+
+        tensor.grad = zeros(tensor.grad.shape)
 
 
 class RMSProp(Optim):
@@ -155,6 +159,8 @@ class RMSProp(Optim):
             (np.sqrt(self.grad_square_avg[i]) + self.eps)
         tensor -= v
 
+        tensor.grad = zeros(tensor.grad.shape)
+
 
 class Adam(Optim):
 
@@ -184,4 +190,7 @@ class Adam(Optim):
         self.m_[i] = self.m[i] / (1-self.betas[0]**(self.steps[i]+1))
         self.v_[i] = self.v[i] / (1-self.betas[1]**(self.steps[i]+1))
 
-        tensor -= self.lr * self.m_[i] / (np.sqrt(self.v_[i]) + self.eps)
+        v = self.lr * self.m_[i] / (np.sqrt(self.v_[i]) + self.eps)
+        tensor -= v
+
+        tensor.grad = zeros(tensor.grad.shape)

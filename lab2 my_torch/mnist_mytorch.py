@@ -2,6 +2,7 @@ import utils
 import torch
 import mytorch
 from mytorch import my_tensor
+from mytorch.myglobal import graph
 import torchvision
 import torchvision.transforms as transforms
 
@@ -11,6 +12,15 @@ utils.setup_seed(729)
 
 # Device configuration
 # device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+
+# Preprocess
+preprocess = False
+img_size = 12 if preprocess else 28
+transform = transforms.Compose([
+    transforms.CenterCrop(img_size),
+    transforms.ToTensor(),
+    transforms.Normalize(0.5, 0.5)
+]) if preprocess else transforms.ToTensor()
 
 # Hyper-parameters
 input_size = 784
@@ -22,9 +32,9 @@ learning_rate = 1e-4
 
 # MNIST dataset
 train_dataset = torchvision.datasets.MNIST(
-    root="./data", train=True, transform=transforms.ToTensor(), download=True)
+    root="./data", train=True, transform=transform, download=True)
 test_dataset = torchvision.datasets.MNIST(
-    root="./data", train=False, transform=transforms.ToTensor())
+    root="./data", train=False, transform=transform)
 
 # Data Loader
 train_loader = torch.utils.data.DataLoader(dataset=train_dataset,
@@ -40,7 +50,8 @@ def test(model):
     total = 0
     correct = 0
     for images, labels in test_loader:
-        images = my_tensor.from_array(images.reshape(-1, 28*28).numpy())
+        images = my_tensor.from_array(
+            images.reshape(-1, img_size**2).numpy())
         labels = my_tensor.from_array(labels.reshape(-1, 1).numpy())
 
         predicted = model(images)
@@ -58,17 +69,14 @@ class NeuralNet(mytorch.Model):
 
         # layers
         self.fc1 = mytorch.Linear(input_size, hidden_size)
-        self.fc2 = mytorch.Linear(hidden_size, hidden_size)
-        self.fc3 = mytorch.Linear(hidden_size, num_classes)
+        self.fc2 = mytorch.Linear(hidden_size, num_classes)
 
-        self.parameters = [self.fc1.w, self.fc2.w, self.fc3.w]
+        self.parameters = [self.fc1.w, self.fc2.w]
 
     def forward(self, x):
         out = self.fc1(x)
         out = mytorch.Functional.ReLU()(out)
         out = self.fc2(out)
-        out = mytorch.Functional.ReLU()(out)
-        out = self.fc3(out)
         out = mytorch.Functional.argmax()(out)
 
         return out
@@ -86,7 +94,8 @@ optimizer = mytorch.Optim.Adam(
 total_step = len(train_loader)
 for epoch in range(num_epochs):
     for i, (images, labels) in enumerate(train_loader):
-        images = my_tensor.from_array(images.reshape(-1, 28*28).numpy())
+        images = my_tensor.from_array(
+            images.reshape(-1, img_size**2).numpy())
         labels = my_tensor.from_array(labels.reshape(-1, 1).numpy())
 
         # Forward pass
