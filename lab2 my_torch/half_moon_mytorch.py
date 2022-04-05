@@ -24,7 +24,8 @@ class Net(mytorch.Model):
         self.fc1 = mytorch.Linear(in_features=input_size, out_features=6)
         self.fc2 = mytorch.Linear(in_features=6, out_features=6)
         self.fc3 = mytorch.Linear(in_features=6, out_features=1)
-        self.relu = mytorch.Functional.ReLU()
+        self.relu1 = mytorch.Functional.ReLU()
+        self.relu2 = mytorch.Functional.ReLU()
 
         self.parameters = [self.fc1.w, self.fc2.w, self.fc3.w]
 
@@ -32,9 +33,9 @@ class Net(mytorch.Model):
         # import pdb;pdb.set_trace()
         super().forward(x)
         out = self.fc1(x)
-        out = self.relu(out)
+        out = self.relu1(out)
         out = self.fc2(out)
-        out = self.relu(out)
+        out = self.relu2(out)
         out = self.fc3(out)
         out = out.squeeze(-1)
         return out
@@ -122,4 +123,14 @@ def main():
 
 
 if __name__ == "__main__":
+    import pdb;pdb.set_trace()
+    sft = mytorch.Functional.Softmax()
+    tsft = mytorch.Functional.Softmax()
+    x = np.array([[1,2,3],[2,3,4],[3,4,5]])
+    h = 0.0001*np.ones_like(x)
+    y_plus_h =  tsft.forward(x+h)
+    y_minus_h =  tsft.forward(x-h)
+    dydx_2h = (y_plus_h - y_minus_h)/2*h
+    y = sft.forward(x)
+    dydx = sft.backward(x)
     main()

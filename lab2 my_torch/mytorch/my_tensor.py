@@ -9,7 +9,6 @@ class Tensor(np.ndarray):
         self.grad = None
         self.momentum_grad = None   
 
-
 def tensor(shape):
     """Return a tensor with a normal Gaussian distribution."""
     return random(shape)
