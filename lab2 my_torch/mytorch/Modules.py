@@ -68,6 +68,7 @@ class Model(Module):
     def backward(self, dy: np.ndarray) -> np.ndarray:
         """Defines the backward propagation of the module.
         """
+
         op_rev_list = list(graph.dict.keys())[::-1]
         for op_idx in op_rev_list:
             dy = graph.dict[op_idx].backward(dy)
@@ -117,7 +118,6 @@ class Linear(Module):
             dx: input delta of shape (L_in).
         """
 
-        # import pdb;pdb.set_trace()
         if len(self.x.shape) < 2:
             self.x = np.broadcast_to(
                 self.x, [1, self.x.shape[0]])  # (b,n_feature)

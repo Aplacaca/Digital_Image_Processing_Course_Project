@@ -14,7 +14,7 @@
     - [ ] ……
 - [ ] Loss Function
     - [x] MSELoss
-    - [ ] CrossEntropyLoss
+    - [x] CrossEntropyLoss
     - [ ] ……
 - [ ] Optim
     - [x] SGD
@@ -31,6 +31,7 @@
 - [ ] Others
     - [ ] cuda
     - [ ] regularization
+    - [x] visualize
 
 使用 mytorch 框架，实现 half_moon 数据集二分类问题：`half_moon_mytorch.py` 和 手写数字图片识别`minst_mytorch.py`
 

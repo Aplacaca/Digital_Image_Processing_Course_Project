@@ -1,7 +1,8 @@
 import utils
 import mytorch
 from mytorch import my_tensor
-from mytorch.my_tensor import Tensor
+from mytorch.myglobal import graph
+
 import numpy as np
 import matplotlib.pyplot as plt
 from sklearn import datasets
@@ -11,7 +12,8 @@ from sklearn.model_selection import train_test_split
 utils.setup_seed(729)
 lr = 1e-2
 momentum = 0.9
-epoch_num = 500
+epoch_num = 2000
+batch_size = 16
 # device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 model_path = "mytorch_model.ckpt"
 
@@ -62,6 +64,9 @@ def test(model, x_test, y_test):
         y = my_tensor.from_array(np.array(y))
         predict.append(model.forward(x))
     P, R = utils.mertix(predict, y_test)
+
+    graph.flush()  # 清除算子图
+
     return P, R
 
 
@@ -99,10 +104,14 @@ def main():
     optimizer = mytorch.Optim.Adam(model.parameters, lr=lr)
     criterion = mytorch.Functional.MSELoss(n_classes=2)
 
+    # Visualize
+    # Start the server by: `python -m visdom.server`
+    vis = utils.Visualizer(env='HalfMoon_MyTorch')
+
     # Train
     for epoch in range(epoch_num):
 
-        for x, y in get_batches(x_train, y_train, batch_size=16):
+        for x, y in get_batches(x_train, y_train, batch_size=batch_size):
 
             x = my_tensor.from_array(x)
             y = my_tensor.from_array(np.array(y))
@@ -117,6 +126,9 @@ def main():
 
         if epoch % 20 == 1:
             P, R = test(model, x_test, y_test)
+            vis.plot('loss', loss.loss)
+            vis.plot('Precise', P)
+            vis.plot('Recall', R)
             print("Precise: %.2f%%   Recall: %.2f%%" % (P*100, R*100))
 
     # Test
@@ -125,14 +137,13 @@ def main():
 
 
 if __name__ == "__main__":
-    import pdb;pdb.set_trace()
-    sft = mytorch.Functional.Softmax()
-    tsft = mytorch.Functional.Softmax()
-    x = np.array([[1,2,3],[2,3,4],[3,4,5]])
-    h = 0.0001*np.ones_like(x)
-    y_plus_h =  tsft.forward(x+h)
-    y_minus_h =  tsft.forward(x-h)
-    dydx_2h = (y_plus_h - y_minus_h)/2*h
-    y = sft.forward(x)
-    dydx = sft.backward(x)
+    # sft = mytorch.Functional.Softmax()
+    # tsft = mytorch.Functional.Softmax()
+    # x = np.array([[1, 2, 3], [2, 3, 4], [3, 4, 5]])
+    # h = 0.0001*np.ones_like(x)
+    # y_plus_h = tsft.forward(x+h)
+    # y_minus_h = tsft.forward(x-h)
+    # dydx_2h = (y_plus_h - y_minus_h)/2*h
+    # y = sft.forward(x)
+    # dydx = sft.backward(x)
     main()

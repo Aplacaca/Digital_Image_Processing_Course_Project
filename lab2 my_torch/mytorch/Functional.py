@@ -149,13 +149,13 @@ class MSELoss(Loss):
         # dy = model.fc2.backward(dy) # (1, 6)
         # dy = model.relu.backward(dy) # (1, 6)
         # dy = model.fc1.backward(dy) # (1, 2)
-        
-        
+
+
 class Softmax(Module):
-    
+
     def __init__(self, delta=1e-7):
         self.delta = delta
-        
+
     def forward(self, x):
         """Forward propagation of Softmax.
 
@@ -169,7 +169,7 @@ class Softmax(Module):
         max_x = np.max(x, axis=1, keepdims=True)
         x_cen = x - max_x
         exp_x = np.exp(x_cen) + self.delta
-        sum_exp = np.sum(exp_x, axis=1, keepdims=True) 
+        sum_exp = np.sum(exp_x, axis=1, keepdims=True)
         self.y = exp_x/sum_exp
 
         return self.y
@@ -184,7 +184,8 @@ class Softmax(Module):
         """
 
         return dy * 1
-        
+
+
 class CrossEntropy(Loss):
 
     def __call__(self, predict, targets):
@@ -200,7 +201,8 @@ class CrossEntropy(Loss):
         self.x = predict
         self.y = targets
         self.delta = 1e-7
-        self.loss = np.mean(-np.sum(self.y*np.log(self.x + self.delta),axis = 1))
+        self.loss = np.mean(-np.sum(self.y *
+                            np.log(self.x + self.delta), axis=1))
 
         return self
 
@@ -209,9 +211,8 @@ class CrossEntropy(Loss):
         """
         # import pdb;pdb.set_trace()
         if len(self.x.shape) < 2:
-            self.x = np.expand_dims(self.x,-1)
+            self.x = np.expand_dims(self.x, -1)
         if len(self.y.shape) < 2:
-            self.y = np.expand_dims(self.y,-1)
-        dy = -self.y/self.x
+            self.y = np.expand_dims(self.y, -1)
+        dy = -self.y/(self.x + self.delta)
         return dy
-
