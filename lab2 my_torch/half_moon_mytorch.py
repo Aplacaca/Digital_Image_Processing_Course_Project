@@ -109,7 +109,7 @@ def main():
 
             # Forward Pass
             output = model.forward(x)
-            loss = criterion(output, y)
+            loss = criterion(np.expand_dims(output,-1), y)
 
             # Backward and Optimize
             model.backward(loss.backward())
@@ -125,14 +125,15 @@ def main():
 
 
 if __name__ == "__main__":
-    import pdb;pdb.set_trace()
-    sft = mytorch.Functional.Softmax()
-    tsft = mytorch.Functional.Softmax()
-    x = np.array([[1,2,3],[2,3,4],[3,4,5]])
-    h = 0.0001*np.ones_like(x)
-    y_plus_h =  tsft.forward(x+h)
-    y_minus_h =  tsft.forward(x-h)
-    dydx_2h = (y_plus_h - y_minus_h)/2*h
-    y = sft.forward(x)
-    dydx = sft.backward(x)
+    # import pdb;pdb.set_trace()
+    # sft = mytorch.Functional.Softmax()
+    # tsft = mytorch.Functional.Softmax()
+    # x = np.array([[1,2,3],[2,3,4],[3,3,5]])
+    # h = 0.1*np.ones_like(x)
+    # y_plus_h =  tsft.forward(x+h)
+    # y_minus_h =  tsft.forward(x-h)
+    # tsft.backward(x)
+    # dydx_2h = (y_plus_h - y_minus_h)/(2*h)
+    # y = sft.forward(x)
+    # dydx = sft.backward(np.ones_like(x))
     main()

@@ -1,3 +1,4 @@
+from copy import deepcopy
 import numpy as np
 from .Modules import Module
 
@@ -52,7 +53,6 @@ class ReLU(Module):
         Returns:
             dx: input delta of shape (N, L_in).
         """
-
         dy[self.x < 0] = 0
 
         return dy
@@ -182,8 +182,13 @@ class Softmax(Module):
         Returns:
             dx: input delta of shape (N, L_in).
         """
-
-        return dy * 1
+        # import pdb;pdb.set_trace()
+        a1 = np.expand_dims(self.y, -1)
+        a2 = a1.transpose(0,2,1)
+        a3 = np.einsum('ijk,ikn->ij',a1,a2)
+        a3 = self.y - a3
+        
+        return dy.dot(a3)
         
 class CrossEntropy(Loss):
 
@@ -212,6 +217,6 @@ class CrossEntropy(Loss):
             self.x = np.expand_dims(self.x,-1)
         if len(self.y.shape) < 2:
             self.y = np.expand_dims(self.y,-1)
-        dy = -self.y/self.x
+        dy = -self.y/(self.x + self.delta)
         return dy
 
