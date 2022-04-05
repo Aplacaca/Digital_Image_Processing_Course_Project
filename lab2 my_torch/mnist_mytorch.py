@@ -95,9 +95,9 @@ class NeuralNet(mytorch.Model):
 model = NeuralNet(input_size, hidden_size, num_classes)
 
 # #Loss and Optimizer
-# criterion = mytorch.Functional.CrossEntropy(n_classes=10)
+criterion = mytorch.Functional.CrossEntropy(n_classes=10)
 # Loss_fn and Optimizer
-criterion = mytorch.Functional.MSELoss(n_classes=10)
+# criterion = mytorch.Functional.MSELoss(n_classes=10)
 # optimizer = mytorch.Optim.SGD(module_params=model.parameters, lr=learning_rate)
 optimizer = mytorch.Optim.Adam(
     module_params=model.parameters, lr=learning_rate)
@@ -123,7 +123,7 @@ for epoch in range(num_epochs):
         optimizer.step()
 
         if (i+1) % 100 == 0:
-            vis.plot('loss', loss.loss)
+            # vis.plot('loss', loss.loss)
             print('Epoch [%d/%d], Step [%d/%d], Loss: %.4f' %
                   (epoch + 1, num_epochs, i+1, total_step, loss.loss))
 

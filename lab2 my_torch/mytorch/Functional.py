@@ -187,55 +187,8 @@ class MSELoss(Loss):
         # dy = model.relu.backward(dy) # (1, 6)
         # dy = model.fc2.backward(dy) # (1, 6)
         # dy = model.relu.backward(dy) # (1, 6)
-        # dy = model.fc1.backward(dy) # (1, 2)
-<<<<<<< HEAD
-        
-        
+        # dy = model.fc1.backward(dy) # (1, 2)  
 
-=======
-
-
-class Softmax(Module):
-
-    def __init__(self, delta=1e-7):
-        self.delta = delta
-
-    def forward(self, x):
-        """Forward propagation of Softmax.
-
-        Args:
-            x: input of shape (N, L_in).
-        Returns:
-            out: output of shape (N, L_out).
-        """
-
-        self.x = x
-        max_x = np.max(x, axis=1, keepdims=True)
-        x_cen = x - max_x
-        exp_x = np.exp(x_cen) + self.delta
-        sum_exp = np.sum(exp_x, axis=1, keepdims=True)
-        self.y = exp_x/sum_exp
-
-        return self.y
-
-    def backward(self, dy):
-        """Backward propagation of Softmax.
-
-        Args:
-            dy: output delta of shape (N, L_out).
-        Returns:
-            dx: input delta of shape (N, L_in).
-        """
-        # import pdb;pdb.set_trace()
-        a1 = np.expand_dims(self.y, -1)
-        a2 = a1.transpose(0, 2, 1)
-        a3 = np.einsum('ijk,ikn->ij', a1, a2)
-        a3 = self.y - a3
-
-        return dy.dot(a3)
-
-
->>>>>>> d206d2245a2d3bb35189b54db4d32224418190c6
 class CrossEntropy(Loss):
 
     def __call__(self, predict, targets):
