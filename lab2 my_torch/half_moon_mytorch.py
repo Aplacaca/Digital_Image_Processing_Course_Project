@@ -9,7 +9,7 @@ from sklearn.model_selection import train_test_split
 
 
 utils.setup_seed(729)
-lr = 0.001
+lr = 1e-2
 momentum = 0.9
 epoch_num = 500
 # device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -64,25 +64,23 @@ def test(model, x_test, y_test):
     return P, R
 
 
-def get_batches(inputs, targets, batch_size=16, shuffle=True): 
-    	#inputs相当于X，targets相当于Y
-        length = len(inputs)
-        if shuffle: #shuffle 随机打乱
-            index = np.arange(length)
-            np.random.shuffle(index)
-        else:
-            index = np.arange(length)
-        start_idx = 0
-        while (start_idx < length):
-            end_idx = min(length, start_idx + batch_size)
-            excerpt = index[start_idx:end_idx]
-            X = inputs[excerpt]
-            Y = targets[excerpt]
-            # import pdb;pdb.set_trace()
-            Y = np.expand_dims(Y, -1)
-            yield my_tensor.from_array(X), my_tensor.from_array(Y)
-            start_idx += batch_size
-            
+def get_batches(inputs, targets, batch_size=16, shuffle=True):
+    # inputs相当于X，targets相当于Y
+    length = len(inputs)
+    if shuffle:  # shuffle 随机打乱
+        index = np.arange(length)
+        np.random.shuffle(index)
+    else:
+        index = np.arange(length)
+    start_idx = 0
+    while (start_idx < length):
+        end_idx = min(length, start_idx + batch_size)
+        excerpt = index[start_idx:end_idx]
+        X = inputs[excerpt]
+        Y = targets[excerpt]
+        Y = np.expand_dims(Y, -1)
+        yield my_tensor.from_array(X), my_tensor.from_array(Y)
+        start_idx += batch_size
 
 
 def main():
@@ -90,17 +88,21 @@ def main():
     X, y = generate_data()
     x_train, x_test, y_train, y_test = train_test_split(
         X, y, test_size=0.1, shuffle=True)
-    show_data(x_test, y_test)
+    # show_data(x_test, y_test)
 
     model = Net(X.shape[1])
-    optimizer = mytorch.Optim.SGD(lr=lr, momentum=momentum)
+    # optimizer = mytorch.Optim.SGD(
+    #     module_params=model.parameters, lr=lr, momentum=momentum)
+    # optimizer = mytorch.Optim.Adagrad(model.parameters, lr=lr)
+    # optimizer = mytorch.Optim.RMSProp(model.parameters, lr=lr)
+    optimizer = mytorch.Optim.Adam(model.parameters, lr=lr)
     criterion = mytorch.Functional.MSELoss(n_classes=2)
 
     # Train
     for epoch in range(epoch_num):
-        
+
         for x, y in get_batches(x_train, y_train, batch_size=16):
-                       
+
             x = my_tensor.from_array(x)
             y = my_tensor.from_array(np.array(y))
 
@@ -110,7 +112,7 @@ def main():
 
             # Backward and Optimize
             model.backward(loss.backward())
-            optimizer.step(model.parameters)
+            optimizer.step()
 
         if epoch % 20 == 1:
             P, R = test(model, x_test, y_test)
