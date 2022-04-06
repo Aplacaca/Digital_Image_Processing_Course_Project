@@ -104,15 +104,8 @@ class Softmax(Module):
             out: output of shape (batch_size, num_class).
         """
 
-        self.x_debug = torch.Tensor(x).requires_grad_(True)
-        self.y_debug = F.softmax(self.x_debug, dim=1)
-
-        # self.x = x
-        # max_x = np.max(x, axis=1, keepdims=True)
-        # x_cen = x
-        # exp_x = np.exp(x_cen) + self.delta
-        # sum_exp = np.sum(exp_x, axis=1, keepdims=True)
-        # self.y = exp_x/sum_exp
+        # self.x_debug = torch.Tensor(x).requires_grad_(True)
+        # self.y_debug = F.softmax(self.x_debug, dim=1)
 
         # self.x = x
         # x_exp = np.exp(x)
@@ -143,7 +136,7 @@ class Softmax(Module):
         #         #           (j == i), self.y[99][i], self.y[99][j]*((j == i)-self.y[99][i]), out[99][j]))
         # out = out * 1e16
 
-        self.x_debug.backward(torch.Tensor(self.y_debug))
+        # self.x_debug.backward(torch.Tensor(self.y_debug))
 
         # a1 = np.expand_dims(self.y, -1)
         # a2 = a1.transpose(0, 2, 1)
@@ -152,8 +145,8 @@ class Softmax(Module):
 
         # import ipdb
         # ipdb.set_trace()
-
         return dy
+        # return out * dy
 
 
 class Loss:
@@ -235,7 +228,7 @@ class CrossEntropy(Loss):
         self.y = I[targets]
         self.delta = 1e-10
         self.loss = np.mean(-np.sum(self.y *
-                                    np.log(self.x + self.delta), axis=1))
+                                    np.log(self.x + 1e-7), axis=1))
 
         return self
 
@@ -248,6 +241,6 @@ class CrossEntropy(Loss):
         if len(self.y.shape) < 2:
             self.y = np.expand_dims(self.y, -1)
 
-        dy = (-self.y / (self.x + self.delta) / self.y.shape[0])
-
+        # dy = (-self.y / (self.x + self.delta) / self.y.shape[0])
+        dy = self.x - self.y
         return dy
