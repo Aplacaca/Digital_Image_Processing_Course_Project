@@ -19,6 +19,6 @@
 
 
 
-### Lab3：CIFAR
+### Lab3：CIFAR-10
 
-继续完善深度学习框架 **My_Torch**，并基于其求解 **CIFAR** 数据集图像识别问题
+使用Pytorch等框架，求解 **CIFAR-10** 数据集图像识别问题
