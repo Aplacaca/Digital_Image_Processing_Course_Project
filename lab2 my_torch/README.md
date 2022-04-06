@@ -8,6 +8,7 @@
 - [ ] Functional
     - [x] relu
     - [x] sigmod
+    - [x] softmax
     - [ ] MaxPool
     - [ ] AvgPool
     - [ ] Dropout
