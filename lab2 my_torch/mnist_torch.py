@@ -25,8 +25,8 @@ transform = transforms.Compose([
 input_size = 1*img_size*img_size
 hidden_size = 500
 num_classes = 10
-num_epochs = 20
-batch_size = 100
+num_epochs = 30
+batch_size = 128
 learning_rate = 1e-3
 
 # MNIST dataset
@@ -64,7 +64,8 @@ optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
 
 # Visualize
 # Start the server by: `python -m visdom.server`
-vis = utils.Visualizer(env='MNIST_Torch')
+vis_env = 'MNIST_Torch_' + optimizer.__class__.__name__ + "_lr-%.1e" % learning_rate
+vis = utils.Visualizer(env=vis_env)
 
 # Train
 total_step = len(train_loader)

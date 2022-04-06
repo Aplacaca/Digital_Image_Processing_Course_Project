@@ -7,6 +7,7 @@ from mytorch.myglobal import graph
 import torch
 import torchvision
 import torchvision.transforms as transforms
+import argparse
 
 # Random Seed
 utils.setup_seed(729)
@@ -24,13 +25,16 @@ transform = transforms.Compose([
 ]) if preprocess else transforms.ToTensor()
 
 # Hyper-parameters
-input_size = 784
-hidden_size = 500
-num_classes = 10
-num_epochs = 30
-batch_size = 128
-learning_rate = 5e-3
-lr_decay = 0.8
+parser = argparse.ArgumentParser(description="Opional arguments for training")
+parser.add_argument('-lr', '--learning-rate', default=5e-3, type=float)
+parser.add_argument('--lr_decay', default=0.8, type=float)
+parser.add_argument('--batch_size', default=128, type=int)
+parser.add_argument('--num_epochs', default=30, type=int)
+parser.add_argument('--hidden_size', default=500, type=int)
+parser.add_argument('--num_classes', default=10, type=int)
+parser.add_argument('--input_size', default=784, type=int)
+parser.add_argument('--optim', default='Adam', type=str)
+args = parser.parse_args()
 
 # MNIST dataset
 train_dataset = torchvision.datasets.MNIST(
@@ -40,14 +44,14 @@ test_dataset = torchvision.datasets.MNIST(
 
 # Data Loader
 train_loader = torch.utils.data.DataLoader(dataset=train_dataset,
-                                           batch_size=batch_size, shuffle=True)
+                                           batch_size=args.batch_size, shuffle=True)
 test_loader = torch.utils.data.DataLoader(dataset=test_dataset,
-                                          batch_size=batch_size, shuffle=False)
+                                          batch_size=args.batch_size, shuffle=False)
 
 
 def test(model):
     """
-    Return the precise and recall on the test dataset
+    Return the accuracy on the test dataset
     """
     total = 0
     correct = 0
@@ -66,7 +70,7 @@ def test(model):
     print('Accuracy of the network on the %d test images: %.4f%%' %
           (len(test_loader)*len(images), 100*correct/total))
 
-    graph.flush()  # 清除算子图
+    graph.flush()  # 清除算子图，避免计入梯度
 
     return 100*correct/total
 
@@ -97,21 +101,33 @@ class NeuralNet(mytorch.Module):
         return out
 
 
-model = NeuralNet(input_size, hidden_size, num_classes)
+# Model
+model = NeuralNet(args.input_size, args.hidden_size, args.num_classes)
 
 # Loss_fn and Optimizer
 criterion = mytorch.Functional.CrossEntropy(n_classes=10)
-optimizer = mytorch.Optim.Adam(
-    module_params=model.parameters, lr=learning_rate)
+if args.optim == 'Adam':
+    optimizer = mytorch.Optim.Adam(
+        module_params=model.parameters, lr=args.learning_rate)
+elif args.optim == 'SGD':
+    optimizer = mytorch.Optim.SGD(
+        module_params=model.parameters, lr=args.learning_rate, momentum=0.9)
+elif args.optim == 'Adagrad':
+    optimizer = mytorch.Optim.Adagrad(
+        module_params=model.parameters, lr=args.learning_rate)
+elif args.optim == 'RMSProp':
+    optimizer = mytorch.Optim.RMSProp(
+        module_params=model.parameters, lr=args.learning_rate)
 
 # Visualize
 # Start the server by: `python -m visdom.server`
-vis_env = 'MNIST_MyTorch_' + optimizer.__class__.__name__ + "_lr-%e_" % learning_rate
+vis_env = 'MNIST_MyTorch_' + optimizer.__class__.__name__ + \
+    "_lr-%.1e" % args.learning_rate
 vis = utils.Visualizer(env=vis_env)
 
 # Train
 total_step = len(train_loader)
-for epoch in range(num_epochs):
+for epoch in range(args.num_epochs):
     for i, (images, labels) in enumerate(train_loader):
         images = my_tensor.from_array(
             images.reshape(-1, img_size**2).numpy())
@@ -128,10 +144,10 @@ for epoch in range(num_epochs):
         if (i+1) % 100 == 0:
             vis.plot('loss', loss.loss)
             print('Epoch [%d/%d], Step [%d/%d], Loss: %.4f' %
-                  (epoch + 1, num_epochs, i+1, total_step, loss.loss))
+                  (epoch + 1, args.num_epochs, i+1, total_step, loss.loss))
 
     # lr decay
-    optimizer.lr *= lr_decay
+    optimizer.lr *= args.lr_decay
     print('learning rate decay to %.4e' % optimizer.lr)
 
     # Test
