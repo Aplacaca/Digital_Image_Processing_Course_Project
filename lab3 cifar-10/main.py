@@ -101,7 +101,7 @@ def train(**kwargs):
                       (epoch + 1, opt.max_epoch, i + 1, len(train_data), loss.item()))
 
         # step5.3: save model
-        path = opt.model_file + 'model_%d.pth' % (epoch + 1)
+        path = opt.model_file + '_model_%d.pth' % (epoch + 1)
         model.save(path)
 
         # step5.4: test
