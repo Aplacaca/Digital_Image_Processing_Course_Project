@@ -69,6 +69,23 @@ def test(model, x_test, y_test):
 
     return P, R
 
+ii = 0
+def plot_predictions(X, y, model, axes):
+    global ii
+    ii=ii+1
+    p=100
+    plt.scatter(X[:, 0], X[:, 1], c=y)
+    x0s = np.linspace(axes[0], axes[1], p)
+    x1s = np.linspace(axes[2], axes[3], p)
+    x0, x1 = np.meshgrid(x0s, x1s)
+    X = np.c_[x0.ravel(), x1.ravel()]
+    y_pred = np.array(model.forward(X)>0.5,dtype=int).reshape(p,p)
+    graph.flush()
+    # import pdb;pdb.set_trace()
+    plt.contourf(x0, x1, y_pred, cmap=plt.cm.brg, alpha=0.2)
+    plt.title("Classifier")
+    plt.savefig(f"./gif/{ii}.png")
+    # return plt
 
 def get_batches(inputs, targets, batch_size=16, shuffle=True):
     # inputs相当于X，targets相当于Y
@@ -100,13 +117,13 @@ def main():
     # optimizer = mytorch.Optim.SGD(
     #     module_params=model.parameters, lr=lr, momentum=momentum)
     # optimizer = mytorch.Optim.Adagrad(model.parameters, lr=lr)
-    # optimizer = mytorch.Optim.RMSProp(model.parameters, lr=lr)
-    optimizer = mytorch.Optim.Adam(model.parameters, lr=lr)
+    optimizer = mytorch.Optim.RMSProp(model.parameters, lr=lr)
+    # optimizer = mytorch.Optim.Adam(model.parameters, lr=lr)
     criterion = mytorch.Functional.MSELoss(n_classes=2)
 
     # Visualize
     # Start the server by: `python -m visdom.server`
-    vis = utils.Visualizer(env='HalfMoon_MyTorch')
+    vis = utils.Visualizer(env='HalfMoon_MyTorch_rms')
 
     # Train
     for epoch in range(epoch_num):
@@ -125,7 +142,10 @@ def main():
             model.backward(loss.backward())
             optimizer.step()
 
+        if epoch%100 == 0:
+            plot_predictions(x_train,y_train,model,[-3,3,-3,3])
         if epoch % 20 == 1:
+            # vis.matplot(ax)
             P, R = test(model, x_test, y_test)
             vis.plot('loss', loss.loss)
             vis.plot('Precise', P)
@@ -138,13 +158,4 @@ def main():
 
 
 if __name__ == "__main__":
-    # sft = mytorch.Functional.Softmax()
-    # tsft = mytorch.Functional.Softmax()
-    # x = np.array([[1, 2, 3], [2, 3, 4], [3, 4, 5]])
-    # h = 0.0001*np.ones_like(x)
-    # y_plus_h = tsft.forward(x+h)
-    # y_minus_h = tsft.forward(x-h)
-    # dydx_2h = (y_plus_h - y_minus_h)/2*h
-    # y = sft.forward(x)
-    # dydx = sft.backward(x)
     main()
