@@ -29,7 +29,7 @@ hidden_size = 500
 num_classes = 10
 num_epochs = 20
 batch_size = 100
-learning_rate = 1e-3
+learning_rate = 5 * 1e-3
 lr_decay = 0.8
 
 # MNIST dataset
