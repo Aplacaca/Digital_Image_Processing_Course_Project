@@ -27,9 +27,10 @@ transform = transforms.Compose([
 input_size = 784
 hidden_size = 500
 num_classes = 10
-num_epochs = 10
+num_epochs = 20
 batch_size = 100
-learning_rate = 1e-4
+learning_rate = 1e-3
+lr_decay = 0.8
 
 # MNIST dataset
 train_dataset = torchvision.datasets.MNIST(
@@ -57,8 +58,8 @@ def test(model):
 
         predicted = model(images)
         graph.flush()
-        # import pdb;pdb.set_trace()
-        predicted = np.expand_dims(np.argmax(predicted, axis = -1), -1)
+
+        predicted = np.expand_dims(np.argmax(predicted, axis=-1), -1)
         total += labels.shape[0]
         correct += (predicted == labels).sum()
 
@@ -71,7 +72,7 @@ def test(model):
 
 
 # Fully connected neural network with two hidden layers
-class NeuralNet(mytorch.Model):
+class NeuralNet(mytorch.Module):
     def __init__(self, input_size, hidden_size, num_classes):
         super(NeuralNet, self).__init__()
 
@@ -82,6 +83,10 @@ class NeuralNet(mytorch.Model):
         self.softmax = mytorch.Functional.Softmax()
 
         self.parameters = [self.fc1.w, self.fc2.w]
+
+    def __call__(self, x: np.ndarray) -> np.ndarray:
+
+        return self.forward(x)
 
     def forward(self, x):
         out = self.fc1(x)
@@ -94,11 +99,8 @@ class NeuralNet(mytorch.Model):
 
 model = NeuralNet(input_size, hidden_size, num_classes)
 
-# #Loss and Optimizer
-criterion = mytorch.Functional.CrossEntropy(n_classes=10)
 # Loss_fn and Optimizer
-# criterion = mytorch.Functional.MSELoss(n_classes=10)
-# optimizer = mytorch.Optim.SGD(module_params=model.parameters, lr=learning_rate)
+criterion = mytorch.Functional.CrossEntropy(n_classes=10)
 optimizer = mytorch.Optim.Adam(
     module_params=model.parameters, lr=learning_rate)
 
@@ -123,10 +125,14 @@ for epoch in range(num_epochs):
         optimizer.step()
 
         if (i+1) % 100 == 0:
-            # vis.plot('loss', loss.loss)
+            vis.plot('loss', loss.loss)
             print('Epoch [%d/%d], Step [%d/%d], Loss: %.4f' %
                   (epoch + 1, num_epochs, i+1, total_step, loss.loss))
 
+    # lr decay
+    optimizer.lr *= lr_decay
+
+    # Test
     test_accuracy = test(model)
     vis.plot('test_accuracy', test_accuracy)
 

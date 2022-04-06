@@ -62,6 +62,10 @@ model = NeuralNet(input_size, hidden_size, num_classes).to(device)
 criterion = nn.CrossEntropyLoss()
 optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
 
+# Visualize
+# Start the server by: `python -m visdom.server`
+vis = utils.Visualizer(env='MNIST_Torch')
+
 # Train
 total_step = len(train_loader)
 for epoch in range(num_epochs):
@@ -81,6 +85,7 @@ for epoch in range(num_epochs):
         optimizer.step()
 
         if (i+1) % 100 == 0:
+            vis.plot('loss', loss.item())
             print('Epoch [{}/{}], Step [{}/{}], Loss: {:.4f}'.
                   format(epoch + 1, num_epochs, i+1, total_step, loss.item()))
 
@@ -97,6 +102,7 @@ for epoch in range(num_epochs):
             total += labels.size(0)
             correct += (predicted == labels).sum().item()
 
+        vis.plot('test_accuracy', 100*correct/total)
         print('Accuracy of the network on the 10000 test images: {}%'.format(
             100*correct/total))
 

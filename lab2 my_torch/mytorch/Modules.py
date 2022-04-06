@@ -1,5 +1,3 @@
-from typing import OrderedDict
-from matplotlib.pyplot import axis
 import numpy as np
 from . import my_tensor
 from mytorch.myglobal import graph
@@ -34,46 +32,13 @@ class Module(object):
     def backward(self, dy: np.ndarray) -> np.ndarray:
         """Defines the backward propagation of the module.
         """
-        ...
-
-    def get_name(self) -> str:
-        name = self.__class__.__name__
-        return name
-
-
-class Model(Module):
-    """Base class for all neural network modules.
-    """
-
-    def __init__(self) -> None:
-        """If a module behaves different between training and testing,
-        its init method should inherit from this one."""
-        self.training = True
-        # self.ops = OrderedDict()
-
-    def __call__(self, x: np.ndarray):
-        """Defines calling forward method at every call.
-        Should not be overridden by subclasses.
-        """
-        return self.forward(x)
-
-    def forward(self, x: np.ndarray) -> np.ndarray:
-        """Defines the forward propagation of the module performed at every call.
-        Should be overridden by all subclasses.
-        """
-        graph.flush()
-        
-
-    def backward(self, dy: np.ndarray) -> np.ndarray:
-        """Defines the backward propagation of the module.
-        """
 
         op_rev_list = list(graph.dict.keys())[::-1]
         for op_idx in op_rev_list:
             # print(f"backward in {op_idx} : {graph.dict[op_idx]}")
             dy = graph.dict[op_idx].backward(dy)
 
-        graph.flush()  # 每次backward完成后，清空graph.dict
+        graph.flush()  # 总模型每次backward完成后，必须清空graph.dict；但是每个算子在backward时不能清空graph.dict，需要重载
 
         return dy
 

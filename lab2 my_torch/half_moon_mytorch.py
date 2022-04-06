@@ -18,7 +18,7 @@ batch_size = 16
 model_path = "mytorch_model.ckpt"
 
 
-class Net(mytorch.Model):
+class Net(mytorch.Module):
     def __init__(self, input_size=2):
         super(Net, self).__init__()
 
@@ -119,7 +119,7 @@ def main():
             # Forward Pass
             # import pdb;pdb.set_trace()
             output = model.forward(x)
-            loss = criterion(np.expand_dims(output,-1), y)
+            loss = criterion(np.expand_dims(output, -1), y)
 
             # Backward and Optimize
             model.backward(loss.backward())

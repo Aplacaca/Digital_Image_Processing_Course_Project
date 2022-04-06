@@ -7,7 +7,8 @@ class Tensor(np.ndarray):
 
     def __init__(self, *args, **kwargs):
         self.grad = None
-        self.momentum_grad = None   
+        self.momentum_grad = None
+
 
 def tensor(shape):
     """Return a tensor with a normal Gaussian distribution."""
@@ -47,5 +48,3 @@ def ones_like(tensor):
 def random(shape, loc=0.0, scale=1):
     """Return a new tensor of given shape, from normal distribution."""
     return from_array(np.random.normal(loc=loc, scale=scale, size=shape))
-
-
