@@ -104,15 +104,13 @@ class Softmax(Module):
             out: output of shape (batch_size, num_class).
         """
 
-        # self.x_debug = torch.Tensor(x).requires_grad_(True)
-        # self.y_debug = F.softmax(self.x_debug, dim=1)
+        self.x = x
+        x_max = np.max(x, axis=1, keepdims=True)
+        x_exp = np.exp(x-x_max)
+        self.y = x_exp / x_exp.sum(axis=1, keepdims=True)
+        self.y = np.where(self.y > 1e-45, self.y, 0)
 
-        # self.x = x
-        # x_exp = np.exp(x)
-        # self.y = x_exp / x_exp.sum(axis=1, keepdims=True)
-        # self.y = np.where(self.y > 1e-45, self.y, 0)
-
-        return self.y_debug.detach().numpy()
+        return self.y
 
     def backward(self, dy):
         """Backward propagation of Softmax.
@@ -130,23 +128,19 @@ class Softmax(Module):
         #             out[:, j] += self.y[:, j] * (1 - self.y[:, i])
         #         else:
         #             out[:, j] += -self.y[:, j] * self.y[:, i]
-
         #         # if j == 3:
         #         #     print("[%d][%d]--%.4e*(%d-%.4e)=%.4e--out:%.4e" % (j, i, self.y[99][j],
         #         #           (j == i), self.y[99][i], self.y[99][j]*((j == i)-self.y[99][i]), out[99][j]))
         # out = out * 1e16
-
-        # self.x_debug.backward(torch.Tensor(self.y_debug))
+        # return out * dy
 
         # a1 = np.expand_dims(self.y, -1)
         # a2 = a1.transpose(0, 2, 1)
         # a3 = np.einsum('ijk,ikn->ij', a1, a2)
         # a3 = self.y - a3
+        # return a3 * dy
 
-        # import ipdb
-        # ipdb.set_trace()
         return dy
-        # return out * dy
 
 
 class Loss:

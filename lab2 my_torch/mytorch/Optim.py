@@ -3,29 +3,6 @@ from copy import deepcopy
 from .my_tensor import Tensor, zeros
 
 
-# class Optim(object):
-
-#     def __init__(self, lr):
-#         self.lr = lr
-
-#     def step(self, module):
-#         self._step_module(module)
-
-#     def _step_module(self, module):
-#         # Traverse the attributes of `self.module`,
-#         # if is `Tensor`, call `self._update_weight()`,
-#         # else if is `Module` or `List` of `Module`,
-#         # call `self._step_module()` recursively.
-
-#         if type(module) == Tensor:
-#             self._update_weight(module)
-#         elif type(module) == list:
-#             [self._step_module(module[i]) for i in range(len(module))]
-
-#     def _update_weight(self, tensor):
-#         tensor -= self.lr * tensor.grad
-
-
 class Optim(object):
 
     def __init__(self, module_params: list, lr: float = 1e-3):
@@ -41,34 +18,6 @@ class Optim(object):
 
     def _update_weight(self, i, tensor):
         tensor -= self.lr * tensor.grad
-
-
-# class SGD(Optim):
-
-#     def __init__(self, lr, momentum: float = 0, dampening: float = 0, nesterov: bool = False):
-#         super(SGD, self).__init__(lr)
-#         self.momentum = momentum  # Momentum
-#         self.dampening = dampening
-#         self.nesterov = nesterov  # NAG
-
-#     def _update_weight(self, tensor):
-#         # batch_num = tensor.shape[0]
-#         # idx = np.random.choice(batch_num,1)
-#         # target_batch = tensor[0,]
-#         if self.momentum > 0:
-#             if tensor.momentum_grad is None:
-#                 tensor.momentum_grad = deepcopy(self.grad)
-#             else:
-#                 tensor.momentum_grad = self.momentum * \
-#                     tensor.momentum_grad + (1-self.dampening) * tensor.grad
-
-#             if self.nesterov:
-#                 tensor.grad = tensor.grad + self.momentum * tensor.momentum_grad
-#             else:
-#                 tensor.grad = tensor.momentum_grad
-
-#         v = self.lr * tensor.grad
-#         tensor -= v
 
 
 class SGD(Optim):
@@ -164,11 +113,12 @@ class RMSProp(Optim):
 
 class Adam(Optim):
 
-    def __init__(self, module_params: list, lr: float = 1e-3, betas: tuple = (0.9, 0.999), eps: float = 1e-8, amsgrad: bool = False):
+    def __init__(self, module_params: list, lr: float = 1e-3, betas: tuple = (0.9, 0.999), eps: float = 1e-8, weight_decay: float = 0, amsgrad: bool = False):
         super(Adam, self).__init__(module_params)
         self.lr = lr
         self.betas = betas
         self.eps = eps
+        self.weight_decay = weight_decay
         self.amsgrad = amsgrad
         self.params = module_params
 
@@ -184,6 +134,9 @@ class Adam(Optim):
         self.steps = [0 for _ in range(len(self.params))]
 
     def _update_weight(self, i, tensor):
+        if self.weight_decay != 0:
+            tensor.grad *= self.weight_decay
+
         self.m[i] = self.betas[0] * self.m[i] + (1-self.betas[0]) * tensor.grad
         self.v[i] = self.betas[1] * self.v[i] + \
             (1-self.betas[1]) * tensor.grad**2

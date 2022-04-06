@@ -27,8 +27,8 @@ transform = transforms.Compose([
 input_size = 784
 hidden_size = 500
 num_classes = 10
-num_epochs = 20
-batch_size = 100
+num_epochs = 30
+batch_size = 128
 learning_rate = 5e-3
 lr_decay = 0.8
 
@@ -64,7 +64,7 @@ def test(model):
         correct += (predicted == labels).sum()
 
     print('Accuracy of the network on the %d test images: %.4f%%' %
-          (len(test_loader), 100*correct/total))
+          (len(test_loader)*len(images), 100*correct/total))
 
     graph.flush()  # 清除算子图
 
@@ -106,7 +106,8 @@ optimizer = mytorch.Optim.Adam(
 
 # Visualize
 # Start the server by: `python -m visdom.server`
-vis = utils.Visualizer(env='MNIST_MyTorch')
+vis_env = 'MNIST_MyTorch_' + optimizer.__class__.__name__ + "_lr-%e_" % learning_rate
+vis = utils.Visualizer(env=vis_env)
 
 # Train
 total_step = len(train_loader)
@@ -131,6 +132,7 @@ for epoch in range(num_epochs):
 
     # lr decay
     optimizer.lr *= lr_decay
+    print('learning rate decay to %.4e' % optimizer.lr)
 
     # Test
     test_accuracy = test(model)
