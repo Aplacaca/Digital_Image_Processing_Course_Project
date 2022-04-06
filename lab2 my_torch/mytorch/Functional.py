@@ -114,12 +114,12 @@ class Softmax(Module):
         # sum_exp = np.sum(exp_x, axis=1, keepdims=True)
         # self.y = exp_x/sum_exp
 
-        self.x = x
-        x_exp = np.exp(x)
-        self.y = x_exp / x_exp.sum(axis=1, keepdims=True)
-        self.y = np.where(self.y > 1e-45, self.y, 0)
+        # self.x = x
+        # x_exp = np.exp(x)
+        # self.y = x_exp / x_exp.sum(axis=1, keepdims=True)
+        # self.y = np.where(self.y > 1e-45, self.y, 0)
 
-        return self.y
+        return self.y_debug.detach().numpy()
 
     def backward(self, dy):
         """Backward propagation of Softmax.
@@ -130,18 +130,18 @@ class Softmax(Module):
             dx: input delta of shape (batch_size, num_class).
         """
 
-        out = np.zeros_like(dy)
-        for j in range(dy.shape[1]):
-            for i in range(dy.shape[1]):
-                if i == j:
-                    out[:, j] += self.y[:, j] * (1 - self.y[:, i])
-                else:
-                    out[:, j] += -self.y[:, j] * self.y[:, i]
+        # out = np.zeros_like(dy)
+        # for j in range(dy.shape[1]):
+        #     for i in range(dy.shape[1]):
+        #         if i == j:
+        #             out[:, j] += self.y[:, j] * (1 - self.y[:, i])
+        #         else:
+        #             out[:, j] += -self.y[:, j] * self.y[:, i]
 
-                if j == 3:
-                    print("[%d][%d]--%.4e*(%d-%.4e)=%.4e--out:%.4e" % (j, i, self.y[99][j],
-                          (j == i), self.y[99][i], self.y[99][j]*((j == i)-self.y[99][i]), out[99][j]))
-        out = out * 1e16
+        #         # if j == 3:
+        #         #     print("[%d][%d]--%.4e*(%d-%.4e)=%.4e--out:%.4e" % (j, i, self.y[99][j],
+        #         #           (j == i), self.y[99][i], self.y[99][j]*((j == i)-self.y[99][i]), out[99][j]))
+        # out = out * 1e16
 
         self.x_debug.backward(torch.Tensor(self.y_debug))
 
@@ -150,10 +150,10 @@ class Softmax(Module):
         # a3 = np.einsum('ijk,ikn->ij', a1, a2)
         # a3 = self.y - a3
 
-        import ipdb
-        ipdb.set_trace()
+        # import ipdb
+        # ipdb.set_trace()
 
-        return out * dy
+        return dy
 
 
 class Loss:
