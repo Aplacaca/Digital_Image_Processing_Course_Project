@@ -62,12 +62,17 @@
 
 ## 网络模块：Modules
 
+- 神经网络中的层结构，其参数需要训练实现调优
 - 定义 mytorch.modules 中的 Linear 层
     - 输入：input_size，out_size
     - 属性：网络权重 w = tensor(input_size+1, output_size)
     - 方法：
         - forward()：计算并保存输入值
         - backward()：根据 `上回输出` 和 `传入的dy` 计算梯度
+
+## 激活函数
+
+- 没有参数可以训练，但是是神经网络前向传播与反向传播中的算子，因此需要实现其forward和backward
 - 定义 mytorch.functional 中的 Relu、Sigmod 对象
     - forward()：计算并保存输入值
     - backward()：根据 `上回输出` 和 `传入的dy` 计算梯度
@@ -99,6 +104,10 @@
     - zeros_like
     - from_array
     - random
+
+## 全局计算图：graph
+
+- 仿照pytorch中的Ordereddict，在每个modules子类\__call\_\_()时记录入有序字典，在反向传播时按字典逆序执行backward即可，并在反向传播结束后清空计算图
 
 &nbsp;
 
