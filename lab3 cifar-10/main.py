@@ -1,17 +1,17 @@
 # -.- coding:utf-8 -.-
 import os
 import fire
-import tqdm
 import torch
+from torch.utils.data import DataLoader
+from math import sqrt
 from torchnet import meter
 from torchvision import datasets, transforms
-from torch.utils.data import DataLoader
 
 import utils
 import models
 from config import DefaultConfig
 
-# Configurations
+# config
 opt = DefaultConfig()
 utils.setup_seed(opt.seed)
 
@@ -64,7 +64,7 @@ def train(**kwargs):
 
     # step4: statistics
     loss_meter = meter.AverageValueMeter()
-    confusion_matrix = meter.ConfusionMeter(opt.num_classes)  # 返回一个2×2混淆矩阵
+    confusion_matrix = meter.ConfusionMeter(opt.num_classes)  # 返回一个混淆矩阵
     previous_loss = 1e100
 
     # step5: train
@@ -77,6 +77,10 @@ def train(**kwargs):
 
         # step5.2: train loop
         for i, (data, label) in enumerate(train_data):
+            # 打印batch_size张随机的彩色图片
+            vis.img(name='batch_pictures', img_=data,
+                    nrow=int(sqrt(opt.batch_size)))
+
             # step5.2.1: train
             if opt.use_gpu:
                 data = data.to(opt.device)
@@ -105,10 +109,14 @@ def train(**kwargs):
         model.save(path)
 
         # step5.4: test
-        test_cm, test_accuracy = test(model, test_data)
+        test_accuracy = test(model, test_data)
+        train_accuracy = sum([confusion_matrix.value()[i][i]
+                             for i in range(opt.num_classes)])
+        train_accuracy = 100. * train_accuracy / confusion_matrix.value().sum()
+
         vis.plot('test_accuracy', test_accuracy)
-        print("epoch:{epoch},lr:{lr},loss:{loss},train_cm:{train_cm},test_cm:{test_cm}".format(
-            epoch=epoch, loss=loss_meter.value()[0], test_cm=str(test_cm.value()), train_cm=str(confusion_matrix.value()), lr=opt.lr))
+        print("[epoch:%d]--[loss:%.4f]--[train_acc: %.2f%%]--[test_acc:%.2f%%]" %
+              (epoch, loss_meter.value()[0], train_accuracy, test_accuracy))
 
         # step5.5: adjust lr
         if loss_meter.value()[0] > previous_loss:
@@ -135,9 +143,11 @@ def test(model, dataloader):
         confusion_matrix.add(predict.detach(), label.detach())
 
     cm_value = confusion_matrix.value()
-    accuracy = 100. * (cm_value[0][0] + cm_value[1][1]) / (cm_value.sum())
 
-    return confusion_matrix, accuracy
+    accuracy = sum([cm_value[i][i] for i in range(opt.num_classes)])
+    accuracy = 100. * accuracy / cm_value.sum()
+
+    return accuracy
 
 
 def help():
