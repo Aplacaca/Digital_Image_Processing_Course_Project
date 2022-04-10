@@ -12,22 +12,20 @@ class LrkNet(BasicModule):
         super(LrkNet, self).__init__()
         self.conv1 = nn.Conv2d(3, 64, kernel_size=3, stride=1, padding=1)
         self.conv2 = nn.Conv2d(64, 64, kernel_size=3, stride=1, padding=1)
-        self.fc = nn.Linear(64*8*8, num_classes)
+        self.fc1 = nn.Linear(164*8*8, 128)
+        self.fc2 = nn.Linear(128, 84)
+        self.fc3 = nn.Linear(84, num_classes)
 
         self.norm = nn.BatchNorm2d(64)
         self.relu = nn.ReLU(inplace=True)
         self.maxpool = nn.MaxPool2d(kernel_size=3, stride=2, padding=1)
 
     def forward(self, x):
-        out = self.conv1(x)
-        out = self.norm(out)
-        out = self.relu(out)
-        out = self.maxpool(out)
-        out = self.conv2(out)
-        out = self.norm(out)
-        out = self.relu(out)
-        out = self.maxpool(out)
+        x = F.max_pool2d(F.relu(self.conv1(x)), (2, 2))
+        x = F.max_pool2d(F.relu(self.conv2(x)), 2)
+        x = x.view(x.size()[0], -1)
+        x = F.relu(self.fc1(x))
+        x = F.relu(self.fc2(x))
+        x = self.fc3(x)
 
-        out = out.view(out.size(0), -1)
-        out = self.fc(out)
-        return out
+        return x
