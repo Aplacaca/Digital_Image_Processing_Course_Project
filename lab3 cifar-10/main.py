@@ -27,10 +27,11 @@ def train(**kwargs):
         os.mkdir(opt.model_file)
 
     # start visualization
-    vis = utils.Visualizer(opt.vis_env)
+    if opt.vis:
+        vis = utils.Visualizer(opt.vis_env)
 
     # step1: model
-    model = getattr(models, opt.model)()
+    model = getattr(models, opt.model)
     if opt.load_model_path:
         model.load(opt.load_model_path)
     if opt.use_gpu:
@@ -78,8 +79,9 @@ def train(**kwargs):
         # step5.2: train loop
         for i, (data, label) in enumerate(train_data):
             # 打印batch_size张随机的彩色图片
-            vis.img(name='batch_pictures', img_=data,
-                    nrow=int(sqrt(opt.batch_size)))
+            if opt.vis:
+                vis.img(name='batch_pictures', img_=data,
+                        nrow=int(sqrt(opt.batch_size)))
 
             # step5.2.1: train
             if opt.use_gpu:
@@ -100,21 +102,24 @@ def train(**kwargs):
             confusion_matrix.add(predict.detach(), label.detach())
 
             if i % opt.print_freq == opt.print_freq - 1:
-                vis.plot('loss', loss_meter.value()[0])
-                print('[Epoch %d/%d] [Batch %d/%d] [loss: %.4f]' %
-                      (epoch + 1, opt.max_epoch, i + 1, len(train_data), loss.item()))
+                if opt.vis:
+                    vis.plot('loss', loss_meter.value()[0])
+                print('[Epoch %d/%d] [Batch %d/%d] [loss: %.4f]' % (epoch + 1,
+                      opt.max_epoch, i + 1, len(train_data), loss_meter.value()[0]))
 
         # step5.3: save model
         path = opt.model_file + '/model_%d.pth' % (epoch + 1)
-        model.save(path)
+        torch.save(model.state_dict(), path)
+        # model.save(path)
 
         # step5.4: test
         test_accuracy = test(model, test_data)
         train_accuracy = sum([confusion_matrix.value()[i][i]
-                             for i in range(opt.num_classes)])
+                              for i in range(opt.num_classes)])
         train_accuracy = 100. * train_accuracy / confusion_matrix.value().sum()
 
-        vis.plot('test_accuracy', test_accuracy)
+        if opt.vis:
+            vis.plot('test_accuracy', test_accuracy)
         print("[epoch:%d]--[loss:%.4f]--[train_acc: %.2f%%]--[test_acc:%.2f%%]" %
               (epoch, loss_meter.value()[0], train_accuracy, test_accuracy))
 
