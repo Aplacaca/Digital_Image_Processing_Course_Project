@@ -15,6 +15,7 @@ resnet152 = models.resnet152(pretrained=False, num_classes=10)
 google = models.googlenet(pretrained=False, num_classes=10)
 
 # # 修改最后的全连接层为10分类问题（默认是ImageNet上的1000分类）
+resnet18.fc = nn.Linear(resnet18.fc.in_features, 10)
 # resnet34.fc = nn.Linear(512, 10)
 # resnet50.fc = nn.Linear(2048, 10)
 # resnet101.fc = nn.Linear(2048, 10)
