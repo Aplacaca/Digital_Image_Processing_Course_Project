@@ -15,7 +15,7 @@ class DefaultConfig(object):
     num_classes = 10  # 类别数
     seed = 729  # random seed
 
-    batch_size = 100  # batch size
+    batch_size = 200  # batch size
     use_gpu = True  # use GPU
     device = 'cuda' if torch.cuda.is_available() else 'cpu'  # available device
     num_workers = 1  # how many workers for loading data
@@ -24,7 +24,7 @@ class DefaultConfig(object):
     model_file = 'checkpoints/' + model
 
     max_epoch = 30
-    lr = 1e-2  # initial learning rate
+    lr = 1e-3  # initial learning rate
     lr_decay = 0.9  # when val_loss increase, lr = lr*lr_decay
     weight_decay = 1e-4
 

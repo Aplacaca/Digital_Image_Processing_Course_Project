@@ -66,7 +66,7 @@ def train(**kwargs):
     train_num = int(0.7 * len(train_dataset))  # 训练集:验证集=7:3
     train_data = DataLoader(dataset=train_dataset, batch_size=opt.batch_size,
                             sampler=sampler.SubsetRandomSampler(range(train_num)))
-    valid_data = DataLoader(dataset=test_dataset, batch_size=opt.batch_size,
+    valid_data = DataLoader(dataset=train_dataset, batch_size=opt.batch_size,
                             sampler=sampler.SubsetRandomSampler(range(train_num, len(train_dataset))))
     test_data = DataLoader(dataset=test_dataset,
                            batch_size=opt.batch_size, shuffle=False)
@@ -75,8 +75,7 @@ def train(**kwargs):
     criterion = torch.nn.CrossEntropyLoss()
     if opt.use_gpu:
         criterion = criterion.to(opt.device)
-    optimizer = torch.optim.SGD(
-        model.parameters(), lr=opt.lr, momentum=0.9, nesterov=True)
+    optimizer = torch.optim.Adam(model.parameters(), lr=opt.lr)
 
     # step4: statistics
     loss_meter = meter.AverageValueMeter()
@@ -140,7 +139,7 @@ def train(**kwargs):
               (epoch, loss_meter.value()[0], train_accuracy, valid_accuracy))
 
         # step5.5: adjust lr
-        if loss_meter.value()[0] > previous_loss:
+        if loss_meter.value()[0]/previous_loss > 0.9 and opt.lr > 1e-5:
             opt.lr = opt.lr * opt.lr_decay
             for param_group in optimizer.param_groups:
                 param_group['lr'] = opt.lr
@@ -177,7 +176,7 @@ def test(model, dataloader):
     accuracy = sum([cm_value[i][i] for i in range(opt.num_classes)])
     accuracy = 100. * accuracy / cm_value.sum()
 
-    model.eval()  # 回到训练模式
+    model.train()  # 回到训练模式
     return accuracy
 
 
