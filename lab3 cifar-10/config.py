@@ -7,7 +7,7 @@ class DefaultConfig(object):
     model = 'ResNet34'  # 使用的模型，名字必须与models/__init__.py中的名字一致
     dataset = 'CIFAR10'  # 数据集名称
     vis = False  # 是否使用visdom可视化
-    vis_env = 'CIFAR10-' + model   # visdom 环境
+    vis_env = dataset + '-' + model   # visdom 环境
 
     train_data_root = './Data/train/'  # 训练集存放路径
     test_data_root = './Data/test/'  # 测试集存放路径
@@ -23,7 +23,7 @@ class DefaultConfig(object):
 
     model_file = 'checkpoints/' + model
 
-    max_epoch = 50
+    max_epoch = 30
     lr = 1e-2  # initial learning rate
     lr_decay = 0.9  # when val_loss increase, lr = lr*lr_decay
     weight_decay = 1e-4
@@ -36,6 +36,8 @@ class DefaultConfig(object):
             if not hasattr(self, k):
                 warnings.warn("Warning: opt has not attribut %s" % k)
             setattr(self, k, v)
+        self.model_file = 'checkpoints/' + self.model
+        self.vis_env = self.dataset + '-' + self.model
 
         # 打印配置信息
         print('user config:')
