@@ -36,7 +36,7 @@ def train(**kwargs):
     # step1: model
     model = getattr(models, opt.model)
     if opt.load_model_path:
-        model.load(opt.load_model_path)
+        model.load_state_dict(torch.load(opt.load_model_path))
     if opt.use_gpu:
         print("device: %s" % opt.device)
         model.to(opt.device)
@@ -125,7 +125,7 @@ def train(**kwargs):
                       opt.max_epoch, i + 1, len(train_data), loss_meter.value()[0]))
 
         # step5.3: validate
-        valid_accuracy = test(model, test_data)
+        valid_accuracy = test(model, valid_data)
         train_accuracy = sum([confusion_matrix.value()[i][i]
                               for i in range(opt.num_classes)])
         train_accuracy = 100. * train_accuracy / confusion_matrix.value().sum()
@@ -136,7 +136,7 @@ def train(**kwargs):
 
         if opt.vis:
             vis.plot('valid_accuracy', valid_accuracy)
-        print("[epoch:%d]--[loss:%.4f]--[train_acc: %.2f%%]--[test_acc:%.2f%%]" %
+        print("[epoch:%d]--[loss:%.4f]--[train_acc: %.2f%%]--[valid_acc:%.2f%%]" %
               (epoch, loss_meter.value()[0], train_accuracy, valid_accuracy))
 
         # step5.5: adjust lr
