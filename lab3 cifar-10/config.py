@@ -4,7 +4,7 @@ import warnings
 
 
 class DefaultConfig(object):
-    model = 'ResNet34'  # 使用的模型，名字必须与models/__init__.py中的名字一致
+    model = 'LrkNet'  # 使用的模型，名字必须与models/__init__.py中的名字一致
     optim = 'Adam'  # 优化器
     dataset = 'CIFAR10'  # 数据集名称
     vis = False  # 是否使用visdom可视化

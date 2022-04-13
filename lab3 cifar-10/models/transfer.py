@@ -1,7 +1,4 @@
 # -.-coding:utf-8 -.-
-
-from .Basic import BasicModule
-
 from torch import nn
 from torchvision import models
 
@@ -27,6 +24,11 @@ resnet18_transfer.fc = nn.Linear(resnet18_transfer.fc.in_features, 10)
 # total_trainable_params = sum(
 #     p.numel() for p in resnet18_transfer.parameters() if p.requires_grad)
 # print('需训练参数个数:{}'.format(total_trainable_params))
+
+
+# resnet34
+resnet34_transfer = models.resnet34(pretrained=True)
+resnet34_transfer.fc = nn.Linear(resnet34_transfer.fc.in_features, 10)
 
 
 # resnet50
@@ -68,18 +70,6 @@ vgg19_transfer.classifier[6] = nn.Linear(
     vgg19_transfer.classifier[6].in_features, 10)
 
 
-# densenet121
-densenet121_transfer = models.densenet121(pretrained=True)
-densenet121_transfer.classifier = nn.Linear(
-    densenet121_transfer.classifier.in_features, 10)
-
-
-# densenet161
-densenet161_transfer = models.densenet161(pretrained=True)
-densenet161_transfer.classifier = nn.Linear(
-    densenet161_transfer.classifier.in_features, 10)
-
-
 # googlenet
 googlenet_transfer = models.googlenet(pretrained=True)
 googlenet_transfer.fc = nn.Linear(
@@ -89,3 +79,23 @@ googlenet_transfer.fc = nn.Linear(
 alexnet_transfer = models.alexnet(pretrained=True)
 alexnet_transfer.classifier[6] = nn.Linear(
     alexnet_transfer.classifier[6].in_features, 10)
+
+# densenet121
+densenet121_transfer = models.densenet121(pretrained=True)
+densenet121_transfer.classifier = nn.Linear(
+    densenet121_transfer.classifier.in_features, 10)
+
+# densenet161
+densenet161_transfer = models.densenet161(pretrained=True)
+densenet161_transfer.classifier = nn.Linear(
+    densenet161_transfer.classifier.in_features, 10)
+
+# densenet169
+densenet169_transfer = models.densenet169(pretrained=True)
+densenet169_transfer.classifier = nn.Linear(
+    densenet169_transfer.classifier.in_features, 10)
+
+# densenet201
+densenet201_transfer = models.densenet201(pretrained=True)
+densenet201_transfer.classifier = nn.Linear(
+    densenet201_transfer.classifier.in_features, 10)
