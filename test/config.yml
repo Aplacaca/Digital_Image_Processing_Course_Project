@@ -1,0 +1,21 @@
+experimentName: CIFAR               # An optional name to distinguish the experiments
+trialCommand: python train.py      # NOTE: change "python3" to "python" if you are using Windows
+trialConcurrency: 2                 # Run 2 trials concurrently
+maxTrialNumber: 10                  # Generate at most 10 trials
+maxExperimentDuration: 1h           # Stop generating trials after 1 hour
+tuner:                              # Configure the tuning algorithm
+   name: TPE
+   classArgs:                       # Algorithm specific arguments
+      optimize_mode: maximize
+trainingService:                    # Configure the training platform
+   platform: local
+searchSpace:
+   batch_size:
+      _type: choice
+      _value: [16, 32, 64, 128]
+   learning_rate:
+      _type: choice
+      _value: [0.0001, 0.001, 0.01, 0.1]
+   epochs:
+      _type: choice
+      _value: [5, 10, 20]
