@@ -12,7 +12,7 @@ import pdb
 from argparse import ArgumentParser
 
 
-jittor.misc.set_global_seed(666)
+jt.misc.set_global_seed(666)
 
 class DetNet(nn.Module):
     def __init__(self):
