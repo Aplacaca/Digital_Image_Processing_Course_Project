@@ -6,22 +6,29 @@ import numpy as np
 
 from jittor.dataset.cifar import CIFAR10
 from jittor.models.resnet import Resnet50, ResNet
-from jittor.models import AlexNet
+from jittor.models import AlexNet, vgg16
 from dataset import Tiny_vid
 import pdb
 from argparse import ArgumentParser
 
 
+jittor.misc.set_global_seed(666)
 
 class DetNet(nn.Module):
     def __init__(self):
         super(DetNet, self).__init__()
-        self.FeatureNet = nn.Sequential(
-            
+        self.preprocess = nn.Sequential(
+            nn.BatchNorm2d(3)
+        )
+        self.backbone = Resnet50(num_classes=5, pretrained=True)
+        self.classhead = nn.Sequential(
+            nn.Linear(5,5)
         )
         
     def execute(self, x):
-        ...
+        y = self.preprocess(x)
+        y = self.backbone(y)
+        return y
 
 
 
@@ -90,7 +97,8 @@ def main (prm):
     val_loader.set_attrs(batch_size=len(val_loader.ground_truth), shuffle=False)
     
 
-    model = Resnet50(num_classes=5)
+    model = DetNet()
+    # model = vgg16(num_classes=5, pretrained=True)
     # optimizer = nn.Adam(model.parameters(), lr=learning_rate, weight_decay=weight_decay)
     optimizer = nn.SGD(model.parameters(), learning_rate, momentum, weight_decay)
     for epoch in range(epochs):
