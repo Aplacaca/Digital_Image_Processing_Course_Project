@@ -1,3 +1,4 @@
+from tkinter import N
 import numpy as np
 import pandas as pd
 import jittor as jt
@@ -42,10 +43,14 @@ class Tiny_vid(Dataset):
         for root, dirs, files in os.walk(r'./tiny_vid/'):
             # get labels
             # pdb.set_trace()
+            dirs.sort()
+            files.sort()
+            root_last = None
             for name in files:
                 if name in gt_txt_list:
                     # get ground truth
                     gt_name = str(re.match(r'(.*)(\.txt)',name).group(1))
+                    # print("add gt:",gt_name)
                     exec(f"{gt_name}_fp = open(root+name)")
                     fd_lines = []
                     gt_lines = []
@@ -70,21 +75,22 @@ class Tiny_vid(Dataset):
                         
                     exec(gt_name + "_lines" + "=" + "gt_lines[:180]")
                 else:
-                    # print(root)
-                    # break
+                    # if root_last != root:
+                        # print(root)
                     if name.endswith(".JPEG"): 
                         idx = int(str(re.match(r"(.*0*)(\.)", name).group(1)))
                         if idx > 180:
-                            break
+                            continue
                         if self.train:
                             if idx > 150:
-                                break
+                                continue
                         else:
                             if idx < 150:
                                 continue
 
                         img = Image.open(join(root, name))
                         self.images.append(img)
+                    root_last = root 
         
                 
 
@@ -99,6 +105,7 @@ class Tiny_vid(Dataset):
         Returns:
             tuple: (image, target) where target is index of the target class.
         """
+        # print("imglen",len(self.images),"grdlen",len(self.ground_truth),"index:",index)
         img, target = self.images[index], self.ground_truth[index]
         # doing this so that it is consistent with all other datasets
         # to return a PIL Image
