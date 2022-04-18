@@ -63,7 +63,7 @@ class Tiny_vid(Dataset):
                         hh = elem.strip("\n")
                         hh = hh.split(" ")[1:]
                         hh = list(map(float, hh)) 
-                        hh = list(map(lambda x: x/128, hh))
+                        hh = list(map(lambda x: x, hh))
                         hh = [class_name, np.stack(hh)]
                         gt_lines.append(hh)
                         self.debug +=1
