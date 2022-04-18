@@ -23,7 +23,7 @@ class Tiny_vid(Dataset):
         self.images = []
         self.ground_truth = []
         self.train = train
-        self.class_dict = {'bird':0.,'car':1.,'dog':2.,'lizard':3.,'turtle':4.}
+        self.class_dict = {'bird':0,'car':1,'dog':2,'lizard':3,'turtle':4}
         self.debug=0
         # download if not exists
         if not os.path.exists(data_dir):
@@ -80,17 +80,21 @@ class Tiny_vid(Dataset):
                     if name.endswith(".JPEG"): 
                         idx = int(str(re.match(r"(.*0*)(\.)", name).group(1)))
                         if idx > 180:
-                            continue
+                            print("break:",root,"  ",name)
+                            break
                         if self.train:
                             if idx > 150:
-                                continue
+                                print("break:",root,"  ",name)
+                                break
                         else:
-                            if idx < 150:
+                            if idx <= 150:
                                 continue
 
                         img = Image.open(join(root, name))
                         self.images.append(img)
                     root_last = root 
+        print("dataset img len:", len(self.images))
+        print("dataset label len:", len(self.ground_truth))
         
                 
 

@@ -5,7 +5,8 @@ import jittor.transform as trans
 import numpy as np
 
 from jittor.dataset.cifar import CIFAR10
-from jittor.models.resnet import Resnet50
+from jittor.models.resnet import Resnet50, ResNet
+from jittor.models import AlexNet
 from dataset import Tiny_vid
 import pdb
 from argparse import ArgumentParser
@@ -37,33 +38,34 @@ def train(model, train_loader, optimizer, epoch):
                     100. * batch_idx / len(train_loader), loss.data[0]))
 
 
+total_acc = 0
+total_num = 0
 def test(model, val_loader, epoch):
     model.eval()
     test_loss = 0
     correct = 0
-    total_acc = 0
-    total_num = 0
     for batch_idx, (inputs, targets) in enumerate(val_loader):
         batch_size = inputs.shape[0]
         outputs = model(inputs)
-        pred = np.argmax(outputs.data, axis=1)
-        clacss_acc = np.sum(targets[0] == pred)
-        pdb.set_trace()
-        # clacss_acc = 0.
-        total_acc += clacss_acc
+        pred,_ = jt.argmax(outputs.data, dim=1)
+        # pdb.set_trace()
+        class_acc = jt.sum(targets[0] == pred)
+        global total_acc
+        global total_num 
+        total_acc += class_acc
         total_num += batch_size
-        clacss_acc = clacss_acc / batch_size
+        # class_acc = class_acc / batch_size
         
-    print('Test Epoch: {} [{}/{} ({:.0f}%)]\tAcc: {:.6f}'.format(epoch, \
-                batch_idx, len(val_loader),100. * float(batch_idx) / len(val_loader), clacss_acc))
-    return clacss_acc    
+    print('Test Epoch: {} [{}/{} ({:.0f}%)]\tAcc: {:.6f}\tTotal Acc: {:.6f}'.format(epoch, \
+                batch_idx, len(val_loader),100. * float(batch_idx) / len(val_loader), class_acc/ batch_size, total_acc/total_num))
+    return class_acc    
     # print ('Total test acc =', total_acc / total_num)
 
 
 def param_dict():
     parser = ArgumentParser(description="Hyper parameters")
     parser.add_argument('-b','--batch_size', default=16, type=int)
-    parser.add_argument('-l','--learning_rate', default=1e-1, type=float)
+    parser.add_argument('-l','--learning_rate', default=1e-2, type=float)
     parser.add_argument('-e','--epochs', default=200, type=int)
     args = parser.parse_args()
     return vars(args)
@@ -83,11 +85,13 @@ def main (prm):
         ])
     
     train_loader = Tiny_vid(train=True, transform=my_transform).set_attrs(batch_size=batch_size, shuffle=True)
-
     val_loader = Tiny_vid(train=False, transform=my_transform)
-    val_loader.set_attrs(batch_size=len(val_loader), shuffle=False)
+    # pdb.set_trace()
+    val_loader.set_attrs(batch_size=len(val_loader.ground_truth), shuffle=False)
+    
 
-    model = Resnet50()
+    model = Resnet50(num_classes=5)
+    # optimizer = nn.Adam(model.parameters(), lr=learning_rate, weight_decay=weight_decay)
     optimizer = nn.SGD(model.parameters(), learning_rate, momentum, weight_decay)
     for epoch in range(epochs):
         train(model, train_loader, optimizer, epoch)
