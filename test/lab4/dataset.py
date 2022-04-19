@@ -85,11 +85,11 @@ class Tiny_vid(Dataset):
                     if name.endswith(".JPEG"): 
                         idx = int(str(re.match(r"(.*0*)(\.)", name).group(1)))
                         if idx > 180:
-                            print("break:",root,"  ",name)
+                            # print("break:",root,"  ",name)
                             break
                         if self.train:
                             if idx > 150:
-                                print("break:",root,"  ",name)
+                                # print("break:",root,"  ",name)
                                 break
                         else:
                             if idx <= 150:

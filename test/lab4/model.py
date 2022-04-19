@@ -38,7 +38,8 @@ class DetNet(nn.Module):
         )
         self.bbox_head = nn.Sequential(
             nn.BatchNorm1d(512),
-            nn.Linear(512,4)
+            nn.Linear(512,4),
+            nn.Sigmoid()
         )
         
         
@@ -54,7 +55,7 @@ class DetNet(nn.Module):
 
 
 
-def train(model, train_loader, optimizer, epoch):
+def train(model, train_loader, optimizer, optimizer_box, epoch):
     model.train()
     for batch_idx, (inputs, targets) in enumerate(train_loader):
         # import pdb;pdb.set_trace()
@@ -69,12 +70,13 @@ def train(model, train_loader, optimizer, epoch):
         # loss_b = loss_b.sum()
         loss_c = nn.cross_entropy_loss(outputs, targets[0], reduction="mean")
         # pdb.set_trace()
-        loss = loss_c+ loss_b
-        optimizer.step (loss)
-        if batch_idx % 10 == 0:
-            print('Train Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}\tClass Acc: {:.6f}\tBox_Acc: {:.6f}\tAll Acc: {:.6f}'.format(
+        # loss = loss_c + loss_b
+        optimizer.step (loss_c)
+        optimizer_box.step(loss_b)
+        if batch_idx % 90 == 0:
+            print('Train Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}  {:.6f}\tClass Acc: {:.6f}\tBox_Acc: {:.6f}\tAll Acc: {:.6f}'.format(
                     epoch, batch_idx, len(train_loader),
-                    100. * batch_idx / len(train_loader), loss.data[0], class_acc, jt.sum(iou > 0.5)/batch_size, all_correct/batch_size))
+                    100. * batch_idx / len(train_loader), loss_c.data[0], loss_b.data[0], class_acc, jt.sum(iou > 0.5)/batch_size, all_correct/batch_size))
 
 
 
@@ -154,7 +156,7 @@ def test(model, val_loader, epoch):
         
     print('Test Epoch: {} [{}/{} ({:.0f}%)]\tClass Acc: {:.6f}\tBoth Acc: {:.6f}\tBox_Acc: {:.6f}'.format(epoch, \
                 batch_idx, len(val_loader),100. * float(batch_idx) / len(val_loader), class_acc/ batch_size, all_correct/batch_size, jt.sum(test_iou > 0.5)/batch_size))
-    return class_acc    
+    return outputs, outboxes, inputs, targets    
     # print ('Total test acc =', total_acc / total_num)
 
 
@@ -176,7 +178,6 @@ def main (prm):
     epochs = prm['epochs']
     
     my_transform = trans.Compose([
-        # trans.Resize(224),
         trans.ToTensor()
         ])
     
@@ -185,10 +186,12 @@ def main (prm):
     val_loader.set_attrs(batch_size=len(val_loader.ground_truth), shuffle=False)
     
     model = DetNet()
-    optimizer = nn.SGD(list(filter(lambda val: val.requires_grad, model.parameters())), learning_rate, momentum, weight_decay)
-    optimizer_box = nn.SGD(list(filter(lambda val: val.requires_grad, model.parameters())), learning_rate, momentum, weight_decay)
+    optimizer = nn.SGD(model.preprocess.parameters()+model.backbone.parameters()+model.class_head.parameters(), learning_rate, momentum, weight_decay)
+    optimizer_box = nn.SGD(model.bbox_head.parameters(), learning_rate, momentum, weight_decay)
+    # optimizer = nn.SGD(list(filter(lambda val: val.requires_grad, model.parameters())), learning_rate, momentum, weight_decay)
+    # optimizer_box = nn.SGD(list(filter(lambda val: val.requires_grad, model.parameters())), learning_rate, momentum, weight_decay)
     for epoch in range(epochs):
-        train(model, train_loader, optimizer, epoch)
+        train(model, train_loader, optimizer, optimizer_box, epoch)
         test(model, val_loader, epoch)
         
     
