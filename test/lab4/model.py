@@ -23,13 +23,17 @@ class DetNet(nn.Module):
             nn.BatchNorm2d(3)
         )
         self.backbone = Resnet50(num_classes=5, pretrained=True)
+        
         self.class_head = nn.Sequential(
             nn.Dropout(),
-            nn.Linear(5,5),
+            nn.Linear(5,40),
+            nn.Linear(40,5)
             # nn.Softmax()
         )
         self.bbox_head = nn.Sequential(
-            nn.Linear(5,4)
+            nn.Linear(5,40),
+            nn.Relu(),
+            nn.Linear(40,4)
         )
         
         
@@ -104,7 +108,8 @@ def train_bbox_head(model, train_loader, optimizer, epoch):
         # pdb.set_trace()
         batch_size = inputs.shape[0]
         outputs, outboxes = model(inputs)
-        loss = nn.mse_loss(outboxes, targets[1])
+        # loss = nn.mse_loss(outboxes, targets[1])
+        loss = nn.l1_loss(outboxes, targets[1])
         iou = box_iou_batch(outboxes, targets[1])
         optimizer.step (loss)
         if batch_idx % 10 == 0:
@@ -127,14 +132,15 @@ def test(model, val_loader, epoch):
         # pdb.set_trace()
         class_acc = jt.sum(targets[0] == pred)
         test_iou = box_iou_batch(outboxes, targets[1])
+        all_correct = jt.sum((test_iou > 0.5)*(targets[0] == pred))
         global total_acc
         global total_num 
         total_acc += class_acc
         total_num += batch_size
         # class_acc = class_acc / batch_size
         
-    print('Test Epoch: {} [{}/{} ({:.0f}%)]\tAcc: {:.6f}\tTotal Acc: {:.6f}\tBox_Acc: {:.6f}'.format(epoch, \
-                batch_idx, len(val_loader),100. * float(batch_idx) / len(val_loader), class_acc/ batch_size, total_acc/total_num, jt.sum(test_iou > 0.5)/batch_size))
+    print('Test Epoch: {} [{}/{} ({:.0f}%)]\tClass Acc: {:.6f}\tBoth Acc: {:.6f}\tBox_Acc: {:.6f}'.format(epoch, \
+                batch_idx, len(val_loader),100. * float(batch_idx) / len(val_loader), class_acc/ batch_size, all_correct/batch_size, jt.sum(test_iou > 0.5)/batch_size))
     return class_acc    
     # print ('Total test acc =', total_acc / total_num)
 
@@ -161,7 +167,7 @@ def main (prm):
         trans.ToTensor()
         ])
     
-    train_loader = Tiny_vid(train=True, transform=my_transform).set_attrs(batch_size=batch_size, shuffle=True)
+    train_loader = Tiny_vid(train=True, transform=my_transform, aug=True).set_attrs(batch_size=batch_size, shuffle=True)
     val_loader = Tiny_vid(train=False, transform=my_transform)
     # pdb.set_trace()
     val_loader.set_attrs(batch_size=len(val_loader.ground_truth), shuffle=False)

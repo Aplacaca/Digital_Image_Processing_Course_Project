@@ -1,7 +1,4 @@
-from tkinter import N
 import numpy as np
-import pandas as pd
-import jittor as jt
 import os
 from os.path import join, getsize
 
@@ -11,12 +8,17 @@ import re
 import pdb
 from copy import deepcopy
 
+from global_buf import global_labels, global_imgs
 
 class Tiny_vid(Dataset):
     def __init__(self, data_dir="./tiny_vid/", train=True, transform=None, aug=False):
         super().__init__()
         if train:
-            self.set_attrs(total_len=750)
+            if aug:
+                self.set_attrs(total_len=1500)
+            else:
+                self.set_attrs(total_len=750)
+                
         else:
             self.set_attrs(total_len=150)
         self.transform=transform
@@ -71,7 +73,7 @@ class Tiny_vid(Dataset):
                         gt_lines.append(hh)
                         self.debug +=1
                     if self.train:
-                        self.ground_truth.extend(gt_lines[0:150])
+                        self.ground_truth.extend(gt_lines[0:150])                           
                         # print(len(gt_lines[0:150]))
                     else:
                         self.ground_truth.extend(gt_lines[150:180])
@@ -93,10 +95,15 @@ class Tiny_vid(Dataset):
                             if idx <= 150:
                                 continue
 
-                        img = np.array(Image.open(join(root, name)))
+                        img = np.array(Image.open(join(root, name))).transpose(2,0,1)
                         # pdb.set_trace()
                         self.images.append(img)
-                    root_last = root 
+                    root_last = root
+        if self.aug:
+            # pdb.set_trace()
+            self.images.extend(global_imgs)
+            self.ground_truth.extend(global_labels)
+             
         print("dataset img len:", len(self.images))
         print("dataset label len:", len(self.ground_truth))
         
@@ -127,7 +134,7 @@ class Tiny_vid(Dataset):
     
     
 if __name__=='__main__':    
-    dataset = Tiny_vid().set_attrs(batch_size=5, shuffle=True)
+    dataset = Tiny_vid(aug=True).set_attrs(batch_size=5, shuffle=True)
     # dataset = Tiny_vid()
     # print(len(dataset.ground_truth))
     for x, y in dataset:
