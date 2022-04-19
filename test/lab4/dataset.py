@@ -13,7 +13,7 @@ from copy import deepcopy
 
 
 class Tiny_vid(Dataset):
-    def __init__(self, data_dir="./tiny_vid/", train=True, transform=None):
+    def __init__(self, data_dir="./tiny_vid/", train=True, transform=None, aug=False):
         super().__init__()
         if train:
             self.set_attrs(total_len=750)
@@ -22,6 +22,7 @@ class Tiny_vid(Dataset):
         self.transform=transform
         self.images = []
         self.ground_truth = []
+        self.aug = aug
         self.train = train
         self.class_dict = {'bird':0,'car':1,'dog':2,'lizard':3,'turtle':4}
         self.debug=0

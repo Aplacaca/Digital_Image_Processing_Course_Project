@@ -16,7 +16,11 @@ class Albumentations:
                 A.CLAHE(p=0.01),
                 A.RandomBrightnessContrast(p=0.0),
                 A.RandomGamma(p=0.0),
-                A.ImageCompression(quality_lower=75, p=0.0)],
+                A.ImageCompression(quality_lower=75, p=0.0),
+                A.HorizontalFlip(p=0.3),
+                A.VerticalFlip(p=0.3),
+                A.ShiftScaleRotate(shift_limit=0.0625, scale_limit=0.2, rotate_limit=45, p=0.3)],
+                # 随机应用仿射变换：平移，缩放和旋转输入
                 bbox_params=A.BboxParams(format='coco', label_fields=['class_labels']))
  
             # logging.info(colorstr('albumentations: ') + ', '.join(f'{x}' for x in self.transform.transforms if x.p))
@@ -37,10 +41,10 @@ class Albumentations:
         if self.transform and random.random() < p:
             new = self.transform(image=im, bboxes=labels_array[:,1:], class_labels=labels_array[:,0])  # transformed
             im, labels = new['image'], np.array([[c, *b] for c, b in zip(new['class_labels'], new['bboxes'])])
-        class_list = labels[:,0].astypy(int).tolist()       
+        class_list = labels[:,0].astype(int).tolist()       
         box_list = [labels[i,1:] for i in range(labels.shape[0])]
-        import pdb;pdb.set_trace()
         labels = list(map(lambda x,y:[x,y],class_list,box_list))
+        # import pdb;pdb.set_trace()
         return im, labels
     
 if __name__=='__main__':
