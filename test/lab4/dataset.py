@@ -63,7 +63,9 @@ class Tiny_vid(Dataset):
                         hh = elem.strip("\n")
                         hh = hh.split(" ")[1:]
                         hh = list(map(float, hh)) 
-                        hh = list(map(lambda x: x, hh))
+                        hh = list(map(lambda x: x/128.0, hh))
+                        if max(hh) > 1.0:
+                            pdb.set_trace()
                         hh = [class_name, np.stack(hh)]
                         gt_lines.append(hh)
                         self.debug +=1
@@ -90,7 +92,8 @@ class Tiny_vid(Dataset):
                             if idx <= 150:
                                 continue
 
-                        img = Image.open(join(root, name))
+                        img = np.array(Image.open(join(root, name)))
+                        # pdb.set_trace()
                         self.images.append(img)
                     root_last = root 
         print("dataset img len:", len(self.images))
