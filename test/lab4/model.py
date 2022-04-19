@@ -5,7 +5,7 @@ import jittor.transform as trans
 import numpy as np
 
 from jittor.dataset.cifar import CIFAR10
-from jittor.models.resnet import Resnet50, ResNet
+from jittor.models.resnet import Resnet50, ResNet, Resnet34
 from jittor.models import AlexNet, vgg16
 from dataset import Tiny_vid
 import pdb
@@ -20,27 +20,34 @@ class DetNet(nn.Module):
     def __init__(self):
         super(DetNet, self).__init__()
         self.preprocess = nn.Sequential(
-            nn.BatchNorm2d(3)
+            nn.Relu(),
+            nn.AdaptiveAvgPool2d((1,1)),
+            
         )
-        self.backbone = Resnet50(num_classes=5, pretrained=True)
+        # self.backbone = Resnet50(num_classes=5, pretrained=True)
+        # self.backbone = Resnet50(pretrained=True)
+        resnet = Resnet34(pretrained=True)
+        layers = list(resnet.children())[:8]
+        self.backbone = nn.Sequential(*layers)
+        # pdb.set_trace()
         
         self.class_head = nn.Sequential(
+            nn.BatchNorm1d(512),
             nn.Dropout(),
-            nn.Linear(5,40),
-            nn.Linear(40,5)
-            # nn.Softmax()
+            nn.Linear(512,5)
         )
         self.bbox_head = nn.Sequential(
-            nn.Linear(5,40),
-            nn.Relu(),
-            nn.Linear(40,4)
+            nn.BatchNorm1d(512),
+            nn.Linear(512,4)
         )
         
         
     def execute(self, x):
-        y = self.preprocess(x)
+        # pdb.set_trace()
         # with jt.no_grad():
-        y = self.backbone(y)
+        y = self.backbone(x)
+        y = self.preprocess(y)
+        y =  y.view(y.shape[0], -1)
         class_score = self.class_head(y)
         bbox_out = self.bbox_head(y)
         return class_score, bbox_out
@@ -56,12 +63,18 @@ def train(model, train_loader, optimizer, epoch):
             batch_size = inputs.shape[0]
             pred,_ = jt.argmax(outputs.data, dim=1)
             class_acc = jt.sum(targets[0] == pred) / batch_size
-        loss = nn.cross_entropy_loss(outputs, targets[0])
+            iou = box_iou_batch(outboxes, targets[1])
+            all_correct = jt.sum((iou > 0.5)*(targets[0] == pred))
+        loss_b = nn.l1_loss(outboxes, targets[1])
+        # loss_b = loss_b.sum()
+        loss_c = nn.cross_entropy_loss(outputs, targets[0], reduction="mean")
+        # pdb.set_trace()
+        loss = loss_c+ loss_b
         optimizer.step (loss)
         if batch_idx % 10 == 0:
-            print('Train Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}\tTrain Acc: {:.6f}'.format(
+            print('Train Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}\tClass Acc: {:.6f}\tBox_Acc: {:.6f}\tAll Acc: {:.6f}'.format(
                     epoch, batch_idx, len(train_loader),
-                    100. * batch_idx / len(train_loader), loss.data[0], class_acc))
+                    100. * batch_idx / len(train_loader), loss.data[0], class_acc, jt.sum(iou > 0.5)/batch_size, all_correct/batch_size))
 
 
 
@@ -169,19 +182,13 @@ def main (prm):
     
     train_loader = Tiny_vid(train=True, transform=my_transform, aug=True).set_attrs(batch_size=batch_size, shuffle=True)
     val_loader = Tiny_vid(train=False, transform=my_transform)
-    # pdb.set_trace()
     val_loader.set_attrs(batch_size=len(val_loader.ground_truth), shuffle=False)
     
-
     model = DetNet()
-    # model = vgg16(num_classes=5, pretrained=True)
-    # optimizer = nn.Adam(model.parameters(), lr=learning_rate, weight_decay=weight_decay)
-    # pdb.set_trace()    
     optimizer = nn.SGD(list(filter(lambda val: val.requires_grad, model.parameters())), learning_rate, momentum, weight_decay)
     optimizer_box = nn.SGD(list(filter(lambda val: val.requires_grad, model.parameters())), learning_rate, momentum, weight_decay)
     for epoch in range(epochs):
-        train_class_head(model, train_loader, optimizer, epoch)
-        train_bbox_head(model, train_loader, optimizer_box, epoch)
+        train(model, train_loader, optimizer, epoch)
         test(model, val_loader, epoch)
         
     
@@ -192,6 +199,5 @@ def main (prm):
 if __name__=='__main__':
     jt.flags.use_cuda = 1
     prms = param_dict()
-    # import pdb; pdb.set_trace()
     main(prms)
     
