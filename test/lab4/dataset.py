@@ -96,6 +96,7 @@ class Tiny_vid(Dataset):
                                 continue
 
                         img = np.array(Image.open(join(root, name))).transpose(2,0,1)
+                        # img = Image.open(join(root, name))#.transpose(2,0,1)
                         # pdb.set_trace()
                         self.images.append(img)
                     root_last = root

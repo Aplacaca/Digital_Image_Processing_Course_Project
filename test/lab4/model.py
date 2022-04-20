@@ -1,3 +1,4 @@
+from xml.etree.ElementTree import Comment
 import jittor as jt
 from jittor import nn
 import matplotlib.pyplot as plt
@@ -11,6 +12,7 @@ from dataset import Tiny_vid
 import pdb
 from argparse import ArgumentParser
 from bbox import box_iou_batch
+from tensorboardX import SummaryWriter
 # from colorama import Fore, Back, Style
 
 
@@ -20,42 +22,44 @@ class DetNet(nn.Module):
     def __init__(self):
         super(DetNet, self).__init__()
         self.preprocess = nn.Sequential(
-            nn.Relu(),
-            nn.AdaptiveAvgPool2d((1,1)),
+            # nn.Relu(),
+            # nn.AdaptiveAvgPool2d((1,1)),
+            nn.BatchNorm2d(3),
             
         )
-        # self.backbone = Resnet50(num_classes=5, pretrained=True)
-        # self.backbone = Resnet50(pretrained=True)
-        resnet = Resnet34(pretrained=True)
-        layers = list(resnet.children())[:8]
-        self.backbone = nn.Sequential(*layers)
-        # pdb.set_trace()
+        self.backbone = Resnet50(num_classes=5, pretrained=True)
+        # resnet = Resnet50(pretrained=True,num_classes=5)
+        # layers = list(resnet.children())#[:-2]
+        # self.backbone = nn.Sequential(*layers)
         
         self.class_head = nn.Sequential(
-            nn.BatchNorm1d(512),
+            # nn.BatchNorm2d(3),
+            nn.BatchNorm1d(5),
             nn.Dropout(),
-            nn.Linear(512,5)
+            nn.Linear(5,5),
         )
         self.bbox_head = nn.Sequential(
-            nn.BatchNorm1d(512),
-            nn.Linear(512,4),
+            nn.BatchNorm1d(5),
+            # nn.BatchNorm2d(3),
+            nn.Dropout(),
+            nn.Linear(5,10),
+            nn.ReLU6(),
+            nn.Linear(10,4),
             nn.Sigmoid()
         )
         
         
     def execute(self, x):
-        # pdb.set_trace()
-        # with jt.no_grad():
-        y = self.backbone(x)
-        y = self.preprocess(y)
-        y =  y.view(y.shape[0], -1)
+        y = self.preprocess(x)
+        y = self.backbone(y)
+        # y =  y.view(y.shape[0], -1)
         class_score = self.class_head(y)
         bbox_out = self.bbox_head(y)
         return class_score, bbox_out
 
 
 
-def train(model, train_loader, optimizer, optimizer_box, epoch):
+def train(model, train_loader, optimizer, optimizer_box, epoch, writer):
     model.train()
     for batch_idx, (inputs, targets) in enumerate(train_loader):
         # import pdb;pdb.set_trace()
@@ -66,18 +70,22 @@ def train(model, train_loader, optimizer, optimizer_box, epoch):
             class_acc = jt.sum(targets[0] == pred) / batch_size
             iou = box_iou_batch(outboxes, targets[1])
             all_correct = jt.sum((iou > 0.5)*(targets[0] == pred))
+        # loss_b = 1.0-box_iou_batch(outboxes, targets[1])
         loss_b = nn.l1_loss(outboxes, targets[1])
-        # loss_b = loss_b.sum()
         loss_c = nn.cross_entropy_loss(outputs, targets[0], reduction="mean")
-        # pdb.set_trace()
-        # loss = loss_c + loss_b
-        optimizer.step (loss_c)
+        optimizer.step(loss_c)
         optimizer_box.step(loss_b)
         if batch_idx % 90 == 0:
             print('Train Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}  {:.6f}\tClass Acc: {:.6f}\tBox_Acc: {:.6f}\tAll Acc: {:.6f}'.format(
                     epoch, batch_idx, len(train_loader),
                     100. * batch_idx / len(train_loader), loss_c.data[0], loss_b.data[0], class_acc, jt.sum(iou > 0.5)/batch_size, all_correct/batch_size))
-
+    with jt.no_grad():
+        writer.add_scalar('loss_b',loss_b.numpy(), global_step = epoch)
+        writer.add_scalar('loss_c',loss_c.numpy(), global_step = epoch)
+        writer.add_scalar('all_acc_train', all_correct.numpy()/batch_size, global_step = epoch)
+        writer.add_scalar('box_acc_train',jt.sum(iou > 0.5).numpy()/batch_size, global_step = epoch)
+        writer.add_scalar('class_acc_train',class_acc.numpy(), global_step = epoch)
+    return all_correct/batch_size, jt.sum(iou > 0.5)/batch_size, class_acc, loss_b, loss_c
 
 
 def train_class_head(model, train_loader, optimizer, epoch):
@@ -136,7 +144,7 @@ def train_bbox_head(model, train_loader, optimizer, epoch):
 
 total_acc = 0
 total_num = 0
-def test(model, val_loader, epoch):
+def test(model, val_loader, epoch, writer):
     model.eval()
     test_loss = 0
     correct = 0
@@ -154,9 +162,14 @@ def test(model, val_loader, epoch):
         total_num += batch_size
         # class_acc = class_acc / batch_size
         
+    writer.add_scalar('all_acc', all_correct.numpy()/batch_size, global_step = epoch)
+    writer.add_scalar('box_acc',jt.sum(test_iou > 0.5).numpy()/batch_size, global_step = epoch)
+    writer.add_scalar('class_acc',class_acc.numpy()/batch_size, global_step = epoch)
+    
     print('Test Epoch: {} [{}/{} ({:.0f}%)]\tClass Acc: {:.6f}\tBoth Acc: {:.6f}\tBox_Acc: {:.6f}'.format(epoch, \
                 batch_idx, len(val_loader),100. * float(batch_idx) / len(val_loader), class_acc/ batch_size, all_correct/batch_size, jt.sum(test_iou > 0.5)/batch_size))
-    return outputs, outboxes, inputs, targets    
+    # return outputs, outboxes, inputs, targets
+    return class_acc/ batch_size, all_correct/batch_size, jt.sum(test_iou > 0.5)/batch_size
     # print ('Total test acc =', total_acc / total_num)
 
 
@@ -170,12 +183,18 @@ def param_dict():
 
 
 def main (prm):
-   
+    import datetime
     batch_size = prm['batch_size']
     learning_rate = prm['learning_rate']
     momentum = 0.9
     weight_decay = 1e-4
     epochs = prm['epochs']
+    
+    now = datetime.datetime.now()
+    
+    loss = 'l1_loss'
+    comment = f"{now.strftime('%H:%M')}-batch_size{batch_size}-{loss}-lr{learning_rate}-epochs{epochs}"
+    writer = SummaryWriter("./runs/"+comment)
     
     my_transform = trans.Compose([
         trans.ToTensor()
@@ -191,9 +210,9 @@ def main (prm):
     # optimizer = nn.SGD(list(filter(lambda val: val.requires_grad, model.parameters())), learning_rate, momentum, weight_decay)
     # optimizer_box = nn.SGD(list(filter(lambda val: val.requires_grad, model.parameters())), learning_rate, momentum, weight_decay)
     for epoch in range(epochs):
-        train(model, train_loader, optimizer, optimizer_box, epoch)
-        test(model, val_loader, epoch)
-        
+        all_all, box_acc, class_acc, loss_b, loss_c = train(model, train_loader, optimizer, optimizer_box, epoch, writer)
+        class_acc, all_all, box_acc = test(model, val_loader, epoch, writer)
+    writer.close()
     
 
    

@@ -8,18 +8,20 @@ class MyAlbumentations:
         self.transform = None
         try:
             self.transform = Alb.Compose([
-                Alb.Blur(p=0.01),
-                Alb.MedianBlur(p=0.01),
-                Alb.ToGray(p=0.02),
-                Alb.CLAHE(p=0.02),
-                Alb.RandomBrightnessContrast(p=0.0),
-                Alb.RandomGamma(p=0.0),
-                Alb.ImageCompression(quality_lower=75, p=0.0),
-                Alb.HorizontalFlip(p=0.5),
-                Alb.VerticalFlip(p=0.5),
+                Alb.OneOf([
+                Alb.Blur(p=0.1),
+                Alb.MedianBlur(p=0.1),
+                Alb.ToGray(p=0.1),
+                Alb.ImageCompression(quality_lower=75, p=0.1)
+                ],p = 0.2),
+                Alb.CLAHE(p=0.1),
+                Alb.RandomBrightnessContrast(p=0.1),
+                Alb.RandomGamma(p=0.1),
+                Alb.HorizontalFlip(p=0.3),
+                Alb.VerticalFlip(p=0.3),
                 Alb.ShiftScaleRotate(shift_limit=0.0625, scale_limit=0.2, rotate_limit=45, p=0.3)],
                 # 随机应用仿射变换：平移，缩放和旋转输入
-                bbox_params=Alb.BboxParams(format='coco', label_fields=['class_labels']))
+                bbox_params=Alb.BboxParams(format='albumentations', label_fields=['class_labels']))
  
             # logging.info(colorstr('albumentations: ') + ', '.join(f'{x}' for x in self.transform.transforms if x.p))
         except ImportError:  # package not installed, skip
@@ -29,33 +31,64 @@ class MyAlbumentations:
             # logging.info(colorstr('albumentations: ') + f'{e}')
  
     def __call__(self, im, labels, p=1.0):
-        labels_array = []
-        im = np.array(im)
-        for label in labels:
-            tmp = []
-            tmp = np.hstack([np.array([label[0]]),label[1]])
-            labels_array.append(tmp)
-        labels_array = np.array(labels_array)
+        # labels_array = []
+        # im = np.array(im)
+        # for label in labels:
+        #     tmp = []
+        #     tmp = np.hstack([np.array([label[0]]),label[1]])
+        #     labels_array.append(tmp)
+        # labels_array = np.array(labels_array)
         if self.transform and random.random() < p:
-            new = self.transform(image=im, bboxes=labels_array[:,1:], class_labels=labels_array[:,0])  # transformed
+            new = self.transform(image=im, bboxes=[labels[1].tolist()], class_labels=[labels[0]])  # transformed
+            # im, labels = new['image'], np.array([new['class_labels'], new['bboxes']])
             im, labels = new['image'], np.array([[c, *b] for c, b in zip(new['class_labels'], new['bboxes'])])
-        
-        # class_list = labels[:,0].astype(int).tolist()       
+            
+            labels = labels.squeeze(0)
+            # class_list = labels[0].astype(int)
+            # label_list = [class_list, labels[1:]]  
+            # labels = label_list
         # box_list = [labels[i,1:] for i in range(labels.shape[0])]
         # labels = list(map(lambda x,y:[x,y],class_list,box_list))
         # import pdb;pdb.set_trace()
         return im, labels
     
 if __name__=='__main__':
-    # myset = Tiny_vid()
-    # im = myset.images[:10]
-    # labels = myset.ground_truth[:10]
-    # # labels_array = []
-    # # for label in labels:
-    # #     tmp = []
-    # #     tmp = np.hstack([np.array([label[0]]),label[1]])
-    # #     labels_array.append(tmp)
-    # # labels_array = np.array(labels_array)
+    import pdb
+    from dataset import Tiny_vid
+    from copy import deepcopy
     myaug = MyAlbumentations()
-    # outx,outy = myaug(im,labels)
-    import pdb;pdb.set_trace()
+    
+    myset = Tiny_vid(aug=False)
+    my_aug = MyAlbumentations()
+    # pdb.set_trace()
+    imgs = deepcopy(myset.images) 
+    labels = deepcopy(myset.ground_truth)
+    # import cv2
+    # im = cv2.imread("./tiny_vid/bird/000001.JPEG")
+    global_list_img = []
+    global_list_label = []
+    
+    for img, label in zip(imgs,labels):
+        out_img, out_label_list = my_aug(im=img.transpose(1,2,0),labels=label)
+        global_list_img.append(out_img.transpose(2,0,1))
+        global_list_label.append(out_label_list)
+        if len(global_list_img)%50 == 0:
+            print(len(global_list_img))
+    
+    
+    a = np.array(global_list_img)
+    al = np.array(global_list_label)
+    
+    np.save("./transformed_img1.npy",a)
+    np.save("./transformed_label1.npy",al)
+    pdb.set_trace()
+    # print(a.shape)
+    # print(al.shape)
+    
+    # pdb.set_trace()
+    
+    # img2 = deepcopy(myset.images) 
+    # label2 = deepcopy(myset.ground_truth)
+    # global_list_img2, global_list_label2 = my_aug(img2,label2)
+    
+    pdb.set_trace()
