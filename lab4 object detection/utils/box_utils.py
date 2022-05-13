@@ -243,7 +243,7 @@ def hard_negative_mining(conf_pred: Tensor, conf_t: Tensor, neg_pos_ratio: int):
     n_pos = pos_mask.long().sum(dim=1, keepdim=True)
     n_neg = n_pos*neg_pos_ratio
 
-    # 选取出损失最高的负样本，两次sort的目的是让较大的几个loss对应下标位为True，其他置为False
+    # 选取出损失最高的负样本，两次sort的目的是让较大的n_neg个loss对应下标位为True，其他置为False
     loss[pos_mask] = 0
     _, indexes = loss.sort(dim=1, descending=True)
     _, rank = indexes.sort(dim=1)
