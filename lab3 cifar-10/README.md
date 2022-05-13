@@ -4,23 +4,22 @@
 
 - [x] 使用 Pytorch 框架，搭建训练文件及工程目录
 - [x] 在 MNIST、CIFAR10 数据集上训练网络，观察测试集效果
-- [ ] 使用不同的网络结构
-    - [x] ResNet34
-    - [ ] LeNet
-    - [ ] AlexNet
-    - [ ] VGGNet
-    - [ ] CCNet
+- [x] 使用不同的网络结构
+    - [x] ResNet
+    - [x] GoogleNet
+    - [x] AlexNet
+    - [x] VggNet
+    - [x] DenseNet
 
 
 
 ## 进阶
 
 - [ ] 迁移到 Jittor 框架
-- [ ] 尽可能提高准确率
-- [ ] 使用迁移学习
-- [ ] 自行设计较好效果的网络结构
-    - [ ] LrkNet
-    - [ ] DhyNet
+- [x] 尽可能提高准确率
+- [x] 使用迁移学习
+- [x] 自行设计较好效果的网络结构
+    - [x] LrkNet
 
 
 
@@ -32,7 +31,7 @@
 
 - `Data/`：保存数据集
 - `checkpoints/`：保存模型训练后的参数文件
-- `models/`：保存网络模型文件
+- `models/`：保存网络模型对象
 - `utils/`：保存训练和测试时用到的功能函数，例如：可视化
 - `main.py`：主文件，训练和测试程序的入口，通过不同的命令来指定操作和参数
 - `config.py/`：配置文件，所有可配置的变量都集中在此，并提供默认值
@@ -48,17 +47,19 @@
 │   └── train
 │       ├── cifar-10-batches-py
 │       └── cifar-10-python.tar.gz
+│
 ├── README.md
 ├── checkpoints
-│   └── ResNet34
-│       └── model.pth
+│	└──…………
+│
 ├── config.py
 ├── main.py
 ├── models
 │   ├── Basic.py
 │   ├── LrkNet.py
-│   ├── ResNet34.py
+│   ├── …………
 │   └── __init__.py
+│
 └── utils
     ├── __init__.py
     ├── utils.py
@@ -90,4 +91,9 @@
 
 执行网络训练：`python main.py train --args=xx`
 
+测试网络效果：`python main.py test --model <model_name> -- load_model_path <权重文件路径>`
+
+测试集成学习效果：`python main.py ensemble`
+
 帮助文件：`python main.py help`
+
