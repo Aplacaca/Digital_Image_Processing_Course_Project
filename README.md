@@ -21,3 +21,9 @@
 ### Lab4：Detection
 
 手动实现 `SSD: Single Shot MultiBox Detector` 完成单目标检测
+
+### Lab5：LSTM-GAN
+
+复现论文：《Satellite Image Prediction Relying on GAN and LSTM Neural Networks》，利用LSTM和GAN实现
+
+**时序图像预测**
