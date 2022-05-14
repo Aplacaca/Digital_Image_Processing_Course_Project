@@ -11,6 +11,7 @@
 """
 
 import torch
+import numpy as np
 import pandas as pd
 from PIL import Image
 from torchvision import transforms
@@ -29,7 +30,7 @@ class ParseCSV:
         Returns:
         ------- 
         data_list: List[List[str]]
-            数据集的路径列表，每组数据包含41张图片的路径
+            数据集的路径列表，每组数据包含40张图片的路径
         """
 
         data_list = []
@@ -44,12 +45,8 @@ class Weather_Dataset(Dataset):
 
     def __init__(self, img_dir, csv_path, img_size):
         self.img_dir = img_dir
+        self.img_size = img_size
         self.data_list = ParseCSV(csv_path)()  # List[List[str]]  # ! TODO
-        self.transform = transforms.Compose([
-            transforms.Resize((img_size, img_size)),
-            transforms.ToTensor(),
-            transforms.Normalize(mean=[.5], std=[.5])
-        ])
 
     def __getitem__(self, index):
         """
@@ -57,25 +54,33 @@ class Weather_Dataset(Dataset):
         Returns:
         ------- 
         img: Tensor
-            一段时序图片，序列形状为(41, 1, 224, 224)
+            一段时序图片，序列形状为(40, 1, 224, 224)
         """
 
         img_path_prefix = self.img_dir + '/' + \
             self.img_dir.split('/')[-1].lower() + '_'
-
         img_paths = [img_path_prefix + path for path in self.data_list[index]]
 
+        # read images
         try:
             imgs = [Image.open(img_path) for img_path in img_paths]
         except:
             print(img_paths)
             raise Exception('Error: cannot open image')
 
-        if self.transform is not None:
-            imgs = [self.transform(img) for img in imgs]
+        # transform1: resize
+        resize = transforms.Resize((self.img_size, self.img_size))
+        imgs = list(map(lambda img: resize(img), imgs))
+        # transform2: to tensor
+        PIL2Tensor = (lambda img: torch.from_numpy(
+            np.asarray(img)).unsqueeze(0))
+        imgs = list(map(PIL2Tensor, imgs))
+        # transform3: zip gray scale
+        type = self.img_dir.split('/')[-1].lower()
+        type_id = ['precip', 'radar', 'wind'].index(type)
+        imgs = list(map(lambda img: img * [10, 70, 35][type_id] / 255, imgs))
 
         imgs = torch.stack(imgs, dim=0)
-
         return imgs
 
     def __len__(self):
