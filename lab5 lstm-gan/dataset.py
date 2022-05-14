@@ -1,4 +1,15 @@
-# coding:utf-8
+# !/usr/bin/python
+# -*- coding: utf-8 -*-
+"""
+@File    :   dataset.py
+@Time    :   2022/05/14 09:42:46
+@Author  :   Li Ruikun
+@Version :   1.0
+@Contact :   1842604700@qq.com
+@License :   (C)Copyright 2022 Li Ruikun, All rights reserved.
+@Desc    :   Read images from directory
+"""
+
 import torch
 import pandas as pd
 from PIL import Image
@@ -34,7 +45,7 @@ class Weather_Dataset(Dataset):
     def __init__(self, img_dir, csv_path, img_size):
         self.img_dir = img_dir
         self.data_list = ParseCSV(csv_path)()  # List[List[str]]  # ! TODO
-        self.transform = transform_aug = transforms.Compose([
+        self.transform = transforms.Compose([
             transforms.Resize((img_size, img_size)),
             transforms.ToTensor(),
             transforms.Normalize(mean=[.5], std=[.5])

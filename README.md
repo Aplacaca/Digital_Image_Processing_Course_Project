@@ -24,6 +24,4 @@
 
 ### Lab5：LSTM-GAN
 
-复现论文：《Satellite Image Prediction Relying on GAN and LSTM Neural Networks》，利用LSTM和GAN实现
-
-**时序图像预测**
+复现论文《Satellite Image Prediction Relying on GAN and LSTM Neural Networks》，利用LSTM和GAN实现**时序图像预测**
