@@ -4,10 +4,11 @@ import warnings
 
 
 class DefaultConfig(object):
-    model = 'ResNet34'  # 使用的模型，名字必须与models/__init__.py中的名字一致
+    model = 'LrkNet'  # 使用的模型，名字必须与models/__init__.py中的名字一致
+    optim = 'Adam'  # 优化器
     dataset = 'CIFAR10'  # 数据集名称
     vis = False  # 是否使用visdom可视化
-    vis_env = dataset + '-' + model   # visdom 环境
+    vis_env = dataset + '-' + model + '-' + optim   # visdom 环境
 
     train_data_root = './Data/train/'  # 训练集存放路径
     test_data_root = './Data/test/'  # 测试集存放路径
@@ -15,7 +16,7 @@ class DefaultConfig(object):
     num_classes = 10  # 类别数
     seed = 729  # random seed
 
-    batch_size = 100  # batch size
+    batch_size = 200  # batch size
     use_gpu = True  # use GPU
     device = 'cuda' if torch.cuda.is_available() else 'cpu'  # available device
     num_workers = 1  # how many workers for loading data
@@ -24,9 +25,10 @@ class DefaultConfig(object):
     model_file = 'checkpoints/' + model
 
     max_epoch = 30
-    lr = 1e-2  # initial learning rate
+    lr = 1e-3  # initial learning rate
     lr_decay = 0.9  # when val_loss increase, lr = lr*lr_decay
-    weight_decay = 1e-4
+    momentum = 0.9
+    weight_decay = 1e-3  # 权重衰减(L2正则化)
 
     def parse(self, kwargs):
         """
@@ -37,7 +39,7 @@ class DefaultConfig(object):
                 warnings.warn("Warning: opt has not attribut %s" % k)
             setattr(self, k, v)
         self.model_file = 'checkpoints/' + self.model
-        self.vis_env = self.dataset + '-' + self.model
+        self.vis_env = self.dataset + '-' + self.model + '-' + self.optim
 
         # 打印配置信息
         print('user config:')
