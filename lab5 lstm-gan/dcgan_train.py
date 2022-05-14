@@ -29,7 +29,7 @@ opt = DefaultConfig()
 
 # global config
 setup_seed(opt.seed)
-torch.cuda.set_device(0)
+torch.cuda.set_device(1)
 
 # mkdir
 os.makedirs(opt.result_dir, exist_ok=True)
@@ -78,7 +78,7 @@ def train():
 
     # start visualization
     if opt.vis:
-        vis = Visualizer(opt.vis_env)
+        vis = Visualizer(opt.vis_env,port=8099)
 
     # ----------
     #  Training
