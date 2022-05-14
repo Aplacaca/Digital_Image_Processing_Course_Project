@@ -1,10 +1,9 @@
-from xml.etree.ElementTree import Comment
 import jittor as jt
 from jittor import nn
 import matplotlib.pyplot as plt
 import jittor.transform as trans
 import numpy as np
-
+import random
 from jittor.dataset.cifar import CIFAR10
 from jittor.models.resnet import Resnet50, ResNet, Resnet34
 from jittor.models import AlexNet, vgg16
@@ -15,44 +14,43 @@ from bbox import box_iou_batch
 from tensorboardX import SummaryWriter
 # from colorama import Fore, Back, Style
 
-
-jt.misc.set_global_seed(425)
+seed=425
+jt.misc.set_global_seed(seed)
+np.random.seed(seed)
+random.seed(seed)
 
 class DetNet(nn.Module):
     def __init__(self):
         super(DetNet, self).__init__()
         self.preprocess = nn.Sequential(
-            # nn.Relu(),
-            # nn.AdaptiveAvgPool2d((1,1)),
-            nn.BatchNorm2d(3),
+            nn.Relu(),
+            nn.AdaptiveAvgPool2d((1,1)),
+            # nn.BatchNorm2d(3),
             
         )
-        self.backbone = Resnet50(num_classes=5, pretrained=True)
-        # resnet = Resnet50(pretrained=True,num_classes=5)
-        # layers = list(resnet.children())#[:-2]
-        # self.backbone = nn.Sequential(*layers)
+        # self.backbone = Resnet50(num_classes=5, pretrained=True)
+        resnet = Resnet50(num_classes=5, pretrained=True)
+        layers = list(resnet.children())[:-2]
+        self.backbone = nn.Sequential(*layers)
         
         self.class_head = nn.Sequential(
-            # nn.BatchNorm2d(3),
-            nn.BatchNorm1d(5),
+            nn.BatchNorm1d(2048),
             nn.Dropout(),
-            nn.Linear(5,5),
+            nn.Linear(2048,5),
         )
         self.bbox_head = nn.Sequential(
-            nn.BatchNorm1d(5),
-            # nn.BatchNorm2d(3),
+            nn.BatchNorm1d(2048),
             nn.Dropout(),
-            nn.Linear(5,10),
-            nn.ReLU6(),
-            nn.Linear(10,4),
+            nn.Linear(2048,4),
             nn.Sigmoid()
         )
         
         
     def execute(self, x):
-        y = self.preprocess(x)
-        y = self.backbone(y)
-        # y =  y.view(y.shape[0], -1)
+        y = self.backbone(x)
+        y = self.preprocess(y)
+        # pdb.set_trace()
+        y = y.view(y.shape[0], -1)
         class_score = self.class_head(y)
         bbox_out = self.bbox_head(y)
         return class_score, bbox_out
@@ -197,7 +195,9 @@ def main (prm):
     writer = SummaryWriter("./runs/"+comment)
     
     my_transform = trans.Compose([
+        trans.ImageNormalize(mean=[0.5], std=[0.5]),
         trans.ToTensor()
+        
         ])
     
     train_loader = Tiny_vid(train=True, transform=my_transform, aug=True).set_attrs(batch_size=batch_size, shuffle=True)
@@ -205,8 +205,8 @@ def main (prm):
     val_loader.set_attrs(batch_size=len(val_loader.ground_truth), shuffle=False)
     
     model = DetNet()
-    optimizer = nn.SGD(model.preprocess.parameters()+model.backbone.parameters()+model.class_head.parameters(), learning_rate, momentum, weight_decay)
-    optimizer_box = nn.SGD(model.bbox_head.parameters(), learning_rate, momentum, weight_decay)
+    optimizer = nn.SGD(model.backbone.parameters()+model.preprocess.parameters()+model.class_head.parameters(), learning_rate, momentum, weight_decay)
+    optimizer_box = nn.SGD(model.preprocess.parameters()+model.bbox_head.parameters(), learning_rate, momentum, weight_decay)
     # optimizer = nn.SGD(list(filter(lambda val: val.requires_grad, model.parameters())), learning_rate, momentum, weight_decay)
     # optimizer_box = nn.SGD(list(filter(lambda val: val.requires_grad, model.parameters())), learning_rate, momentum, weight_decay)
     for epoch in range(epochs):

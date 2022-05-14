@@ -1,6 +1,8 @@
 import numpy as np
 # import pdb
 
+# global_labels = []
+# global_imgs = []
 global_list_img = np.load("./transformed_img1.npy")
 global_list_label = np.load("./transformed_label1.npy")
 

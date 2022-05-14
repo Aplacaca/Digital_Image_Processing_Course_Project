@@ -17,6 +17,7 @@ class MyAlbumentations:
                 Alb.CLAHE(p=0.1),
                 Alb.RandomBrightnessContrast(p=0.1),
                 Alb.RandomGamma(p=0.1),
+                Alb.RandomCrop(height=128,width=128,p=0.7),
                 Alb.HorizontalFlip(p=0.3),
                 Alb.VerticalFlip(p=0.3),
                 Alb.ShiftScaleRotate(shift_limit=0.0625, scale_limit=0.2, rotate_limit=45, p=0.3)],
@@ -31,25 +32,15 @@ class MyAlbumentations:
             # logging.info(colorstr('albumentations: ') + f'{e}')
  
     def __call__(self, im, labels, p=1.0):
-        # labels_array = []
-        # im = np.array(im)
-        # for label in labels:
-        #     tmp = []
-        #     tmp = np.hstack([np.array([label[0]]),label[1]])
-        #     labels_array.append(tmp)
-        # labels_array = np.array(labels_array)
         if self.transform and random.random() < p:
             new = self.transform(image=im, bboxes=[labels[1].tolist()], class_labels=[labels[0]])  # transformed
             # im, labels = new['image'], np.array([new['class_labels'], new['bboxes']])
-            im, labels = new['image'], np.array([[c, *b] for c, b in zip(new['class_labels'], new['bboxes'])])
-            
-            labels = labels.squeeze(0)
-            # class_list = labels[0].astype(int)
-            # label_list = [class_list, labels[1:]]  
-            # labels = label_list
-        # box_list = [labels[i,1:] for i in range(labels.shape[0])]
-        # labels = list(map(lambda x,y:[x,y],class_list,box_list))
-        # import pdb;pdb.set_trace()
+            im, label_s = new['image'], np.array([[c, *b] for c, b in zip(new['class_labels'], new['bboxes'])])
+            # pdb.set_trace()
+            if label_s.shape[0] != 0:
+                labels = label_s.squeeze(0)
+            # else:
+            #     labels = 
         return im, labels
     
 if __name__=='__main__':
