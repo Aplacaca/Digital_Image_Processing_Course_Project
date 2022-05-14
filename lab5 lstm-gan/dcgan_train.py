@@ -22,7 +22,7 @@ from dataset import Weather_Dataset
 from utils.visualize import Visualizer
 from utils.setup_seed import setup_seed
 from utils.exception_handler import exception_handler
-from models.dcgan import Generator, Discriminator
+from models.dcgan import Generator as dc_generator, Discriminator as dc_disciminator
 
 # config
 opt = DefaultConfig()
@@ -33,8 +33,19 @@ torch.cuda.set_device(0)
 
 # mkdir
 os.makedirs(opt.result_dir, exist_ok=True)
+os.makedirs(opt.result_dir + opt.img_class + '/', exist_ok=True)
 os.makedirs(opt.save_model_file, exist_ok=True)
 os.makedirs(opt.save_model_file + opt.img_class + '/', exist_ok=True)
+
+
+def recover_img(imgs, img_class=opt.img_class):
+    """将图片还原到原始范围"""
+
+    type_id = ['precip', 'radar', 'wind'].index(img_class.lower())
+    factor = [10, 70, 35][type_id]
+    imgs = torch.clamp(input=imgs, min=0, max=factor) / factor * 255
+
+    return imgs
 
 
 @exception_handler
@@ -43,8 +54,8 @@ def train():
     adversarial_loss = torch.nn.BCELoss()
 
     # Initialize generator and discriminator
-    generator = Generator(opt)
-    discriminator = Discriminator(opt)
+    generator = dc_generator(opt)
+    discriminator = dc_disciminator(opt)
 
     if opt.use_gpu:
         generator.to(opt.device)
@@ -61,7 +72,7 @@ def train():
 
     # Configure data loader
     datasets = Weather_Dataset(img_dir=opt.train_dataset_path + opt.img_class,
-                               csv_path='./weather_data/dataset_train.csv',
+                               csv_path=opt.train_csv_path,
                                img_size=opt.img_size)
     dataloader = iter(range(len(datasets)))
 
@@ -73,7 +84,7 @@ def train():
     #  Training
     # ----------
 
-    bar_format = '{desc}{n_fmt:>4s}/{total_fmt:<4s}|{bar}|{postfix}'
+    bar_format = '{desc}{n_fmt:>3s}/{total_fmt:<5s} |{bar}|{postfix}'
     print('🚀 开始训练！')
 
     for epoch in range(opt.n_epochs):
@@ -82,7 +93,7 @@ def train():
                 imgs = datasets[imgs_index]
 
                 # display the first part of progress bar
-                bar.set_description(f"\33[36m🌌 Epoch {epoch:2d}")
+                bar.set_description(f"\33[36m🌌 Epoch {epoch:1d}")
 
                 # Adversarial ground truths
                 valid = Variable(Tensor(imgs.shape[0], 1).fill_(
@@ -137,13 +148,16 @@ def train():
                     vis.plot(win='Loss', name='G loss', y=g_loss.item())
                     vis.plot(win='Loss', name='D loss', y=d_loss.item())
                 if opt.vis:
-                    vis.img(name='Real', img_=imgs.data[:1], nrow=1)
-                    vis.img(name='Fake', img_=gen_imgs.data[:1], nrow=1)
+                    imgs_ = recover_img(imgs.data[:1], opt.img_class)
+                    gen_imgs_ = recover_img(gen_imgs.data[:1], opt.img_class)
+                    vis.img(name='Real', img_=imgs_, nrow=1)
+                    vis.img(name='Fake', img_=gen_imgs_, nrow=1)
 
                 # save the model and generated images every 500 batches
                 if i % opt.sample_interval == 0:
-                    save_image(
-                        gen_imgs.data[:9], opt.result_dir+f"{i}.png", nrow=3, normalize=True)
+                    gen_imgs_ = recover_img(gen_imgs.data[:9], opt.img_class)
+                    save_image(gen_imgs_, opt.result_dir + opt.img_class +
+                               '/' + f"{i}.png", nrow=3, normalize=False)
                     torch.save(generator.state_dict(),
                                opt.save_model_file + opt.img_class + '/' + 'generator_'+str(i)+'.pth')
                     torch.save(discriminator.state_dict(),
