@@ -113,7 +113,7 @@ def train():
                 # Sample noise as generator input
                 z = Variable(Tensor(np.random.normal(
                     0, 1, (imgs.shape[0], opt.latent_dim))))
-
+                import pdb;pdb.set_trace()
                 # Generate a batch of images
                 gen_imgs = generator(z)
 
@@ -130,6 +130,7 @@ def train():
                 optimizer_D.zero_grad()
 
                 # Measure discriminator's ability to classify real from generated samples
+                import pdb;pdb.set_trace()
                 real_loss = adversarial_loss(discriminator(real_imgs), valid)
                 fake_loss = adversarial_loss(
                     discriminator(gen_imgs.detach()), fake)
