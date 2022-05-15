@@ -24,7 +24,7 @@ class DefaultConfig(object):
     train_csv_path = '/home/lrk/lab5/data/Train.csv'  # csv file path
     train_dataset_path = '/home/lrk/lab5/data/Train/'  # image file path
     load_model_path = None  # 加载预训练的模型的路径，为None代表不加载
-    save_model_file = 'checkpoints/'  # weights file path
+    save_model_file = 'checkpoints/GAN/'  # weights file path
     result_dir = 'images_' + gan_model + '/'  # result image path
 
     # 图片参数
