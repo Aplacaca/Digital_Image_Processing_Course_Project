@@ -20,11 +20,11 @@ class DefaultConfig(object):
     gan_model = 'dcgan'
 
     # 文件路径
-    img_class = 'Precip'
-    train_csv_path = './weather_data/Train.csv'  # csv file path
-    train_dataset_path = './weather_data/Train/'  # image file path
+    img_class = 'Radar'
+    train_csv_path = './data/Train.csv'  # csv file path
+    train_dataset_path = './data/Train/'  # image file path
     load_model_path = None  # 加载预训练的模型的路径，为None代表不加载
-    save_model_file = 'checkpoints/'  # weights file path
+    save_model_file = 'checkpoints/GAN/'  # weights file path
     result_dir = 'images_' + gan_model + '/'  # result image path
 
     # 图片参数
