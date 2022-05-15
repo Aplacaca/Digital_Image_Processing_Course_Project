@@ -111,7 +111,7 @@ if __name__ == '__main__':
     target = Variable(torch.randn(20, 100).to(device)).double()
 
     o,_= convlstm(input)
-    output = o[0][0].double()
+    output = torch(o).double()
     # res = torch.autograd.gradcheck(loss_fn, (output, target), eps=1e-6, raise_exception=True)
     # print(res)
     import pdb;pdb.set_trace()
