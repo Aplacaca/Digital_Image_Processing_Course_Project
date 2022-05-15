@@ -22,6 +22,7 @@ from dataset import Weather_Dataset
 from utils.visualize import Visualizer
 from utils.setup_seed import setup_seed
 from utils.exception_handler import exception_handler
+from models.backbone import FeatureExtractor
 from models.dcgan import Generator as dc_generator, Discriminator as dc_disciminator
 
 # config
@@ -56,20 +57,22 @@ def train():
     # Loss function
     adversarial_loss = torch.nn.BCELoss()
 
-    # Initialize generator and discriminator
+    # Initialize feature_extractor、generator and discriminator
+    feature_extractor = FeatureExtractor(opt.img_size, opt.latent_dim)
     generator = dc_generator(opt)
     discriminator = dc_disciminator(opt)
 
+
     if opt.use_gpu:
+        feature_extractor.to(opt.device)
         generator.to(opt.device)
         discriminator.to(opt.device)
         adversarial_loss.to(opt.device)
 
     # Optimizers
-    optimizer_G = torch.optim.Adam(
-        generator.parameters(), lr=opt.lr, betas=(opt.b1, opt.b2))
-    optimizer_D = torch.optim.Adam(
-        discriminator.parameters(), lr=opt.lr, betas=(opt.b1, opt.b2))
+    optimizer_fe = torch.optim.Adam(feature_extractor.parameters(), lr=opt.lr, betas=(opt.b1, opt.b2))
+    optimizer_G = torch.optim.Adam(generator.parameters(), lr=opt.lr, betas=(opt.b1, opt.b2))
+    optimizer_D = torch.optim.Adam(discriminator.parameters(), lr=opt.lr, betas=(opt.b1, opt.b2))
 
     Tensor = torch.cuda.FloatTensor if opt.use_gpu else torch.FloatTensor
 
@@ -111,14 +114,18 @@ def train():
                 real_imgs = Variable(imgs.type(Tensor))
 
                 # -----------------
-                #  Train Generator
+                #  Train Generator and Feature Extractor
                 # -----------------
 
                 optimizer_G.zero_grad()
+                optimizer_fe.zero_grad()
 
-                # Sample noise as generator input
-                z = Variable(Tensor(np.random.normal(
-                    0, 1, (imgs.shape[0], opt.latent_dim))))
+                # # Sample noise as generator input
+                # z = Variable(Tensor(np.random.normal(
+                #     0, 1, (imgs.shape[0], opt.latent_dim))))
+                
+                # Extract feature maps from real images
+                z = feature_extractor(real_imgs)
 
                 # Generate a batch of images
                 gen_imgs = generator(z)
@@ -128,6 +135,7 @@ def train():
 
                 g_loss.backward()
                 optimizer_G.step()
+                optimizer_fe.step()
 
                 # ---------------------
                 #  Train Discriminator
