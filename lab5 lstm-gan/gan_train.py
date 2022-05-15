@@ -38,14 +38,17 @@ os.makedirs(opt.save_model_file, exist_ok=True)
 os.makedirs(opt.save_model_file + opt.img_class + '/', exist_ok=True)
 
 
-def recover_img(imgs, img_class=opt.img_class):
-    """将图片还原到原始范围"""
+# def recover_img(imgs, img_class=opt.img_class):
+#     """将图片还原到原始范围"""
 
-    type_id = ['precip', 'radar', 'wind'].index(img_class.lower())
-    factor = [10, 70, 35][type_id]
-    imgs = torch.clamp(input=imgs, min=0, max=factor) / factor * 255
+#     type_id = ['precip', 'radar', 'wind'].index(img_class.lower())
+#     factor = [10.0, 70.0, 35.0][type_id]
+#     imgs = torch.clamp(input=imgs, min=0, max=factor) / factor * 255.0
 
-    return imgs
+#     return imgs
+
+def denormalize(imgs, mean=0.5, variance=0.5):
+    return imgs.mul(variance).add(mean) * 255.0
 
 
 @exception_handler
@@ -90,7 +93,10 @@ def train():
     for epoch in range(opt.n_epochs):
         with tqdm(total=len(datasets), bar_format=bar_format) as bar:
             for i, imgs_index in enumerate(dataloader):
+            # i=0
+            # while i < 10000:
                 imgs = datasets[imgs_index]
+                # imgs = datasets[1]
 
                 # display the first part of progress bar
                 bar.set_description(f"\33[36m🌌 Epoch {epoch:1d}")
@@ -148,14 +154,17 @@ def train():
                     vis.plot(win='Loss', name='G loss', y=g_loss.item())
                     vis.plot(win='Loss', name='D loss', y=d_loss.item())
                 if opt.vis:
-                    imgs_ = recover_img(imgs.data[:1], opt.img_class)
-                    gen_imgs_ = recover_img(gen_imgs.data[:1], opt.img_class)
+                    # imgs_ = recover_img(imgs.data[:1], opt.img_class)
+                    # gen_imgs_ = recover_img(gen_imgs.data[:1], opt.img_class)
+                    imgs_ = denormalize(imgs.data[:1])
+                    gen_imgs_ = denormalize(gen_imgs.data[:1])
                     vis.img(name='Real', img_=imgs_, nrow=1)
                     vis.img(name='Fake', img_=gen_imgs_, nrow=1)
 
                 # save the model and generated images every 500 batches
                 if i % opt.sample_interval == 0:
-                    gen_imgs_ = recover_img(gen_imgs.data[:9], opt.img_class)
+                    # gen_imgs_ = recover_img(gen_imgs.data[:9], opt.img_class)
+                    gen_imgs_ = denormalize(gen_imgs.data[:9])
                     save_image(gen_imgs_, opt.result_dir + opt.img_class +
                                '/' + f"{i}.png", nrow=3, normalize=False)
                     torch.save(generator.state_dict(),

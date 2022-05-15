@@ -27,22 +27,26 @@ class Generator(nn.Module):
     def __init__(self, opt):
         super(Generator, self).__init__()
 
-        self.init_size = opt.img_size // 4
+        # images of one batch: (40, 1, 256, 256)
+        # shape of input: (40, opt.latent_dim=100)
+
+        self.init_size = opt.img_size // 4 # 64
         self.l1 = nn.Sequential(
             nn.Linear(opt.latent_dim, 128 * self.init_size ** 2))
 
         self.conv_blocks = nn.Sequential(
-            nn.BatchNorm2d(128),
-            nn.Upsample(scale_factor=2),
+            nn.BatchNorm2d(128), 
+            nn.Upsample(scale_factor=2), # (40, 128, 128, 128)
             nn.Conv2d(128, 128, 3, stride=1, padding=1),
             nn.BatchNorm2d(128, 0.8),
             nn.LeakyReLU(0.2, inplace=True),
-            nn.Upsample(scale_factor=2),
-            nn.Conv2d(128, 64, 3, stride=1, padding=1),
+            nn.Upsample(scale_factor=2), # (40, 128, 256, 256)
+            nn.Conv2d(128, 64, 3, stride=1, padding=1), # (40, 64, 256, 256)
             nn.BatchNorm2d(64, 0.8),
             nn.LeakyReLU(0.2, inplace=True),
-            nn.Conv2d(64, opt.channels, 3, stride=1, padding=1),
+            nn.Conv2d(64, opt.channels, 3, stride=1, padding=1), # (40, 1, 256, 256)
             nn.Tanh(),
+
         )
         # Initialize weights
         self.apply(weights_init_normal)
@@ -58,6 +62,8 @@ class Discriminator(nn.Module):
     def __init__(self, opt):
         super(Discriminator, self).__init__()
 
+        # images of one batch: (40, 1, 256, 256)
+
         def discriminator_block(in_filters, out_filters, bn=True):
             block = [nn.Conv2d(in_filters, out_filters, 3, 2, 1), nn.LeakyReLU(
                 0.2, inplace=True), nn.Dropout2d(0.25)]
@@ -66,10 +72,10 @@ class Discriminator(nn.Module):
             return block
 
         self.model = nn.Sequential(
-            *discriminator_block(opt.channels, 16, bn=False),
-            *discriminator_block(16, 32),
-            *discriminator_block(32, 64),
-            *discriminator_block(64, 128),
+            *discriminator_block(opt.channels, 16, bn=False), # (40, 16, 128, 128)
+            *discriminator_block(16, 32), # (40, 32, 64, 64)
+            *discriminator_block(32, 64), # (40, 64, 32, 32)
+            *discriminator_block(64, 128), # (40, 128, 16, 16)
         )
 
         # The height and width of downsampled image

@@ -47,6 +47,11 @@ class Weather_Dataset(Dataset):
         self.img_dir = img_dir
         self.img_size = img_size
         self.data_list = ParseCSV(csv_path)()  # List[List[str]]  # ! TODO
+        self.transform = transforms.Compose([
+            transforms.Resize((self.img_size, self.img_size)),
+            transforms.ToTensor(),
+            transforms.Normalize(mean=[0.5], std=[0.5])
+        ])
 
     def __getitem__(self, index):
         """
@@ -68,17 +73,20 @@ class Weather_Dataset(Dataset):
             print(img_paths)
             raise Exception('Error: cannot open image')
 
-        # transform1: resize
-        resize = transforms.Resize((self.img_size, self.img_size))
-        imgs = list(map(lambda img: resize(img), imgs))
-        # transform2: to tensor
-        PIL2Tensor = (lambda img: torch.from_numpy(
-            np.asarray(img)).unsqueeze(0))
-        imgs = list(map(PIL2Tensor, imgs))
-        # transform3: zip gray scale
-        type = self.img_dir.split('/')[-1].lower()
-        type_id = ['precip', 'radar', 'wind'].index(type)
-        imgs = list(map(lambda img: img * [10, 70, 35][type_id] / 255, imgs))
+        # # transform1: resize
+        # resize = transforms.Resize((self.img_size, self.img_size))
+        # imgs = list(map(lambda img: resize(img), imgs))
+        # # transform2: to tensor
+        # PIL2Tensor = (lambda img: torch.from_numpy(
+        #     np.asarray(img)).float().unsqueeze(0))
+        # imgs = list(map(PIL2Tensor, imgs))
+        # # transform3: zip gray scale
+        # type = self.img_dir.split('/')[-1].lower()
+        # type_id = ['precip', 'radar', 'wind'].index(type)
+        # imgs = list(
+        #     map(lambda img: img * [10.0, 70.0, 35.0][type_id] / 255.0, imgs))
+
+        imgs = list(map(self.transform, imgs))
 
         imgs = torch.stack(imgs, dim=0)
         return imgs
