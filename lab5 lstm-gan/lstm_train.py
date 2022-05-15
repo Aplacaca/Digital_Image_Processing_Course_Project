@@ -44,8 +44,8 @@ def train():
     pred_loss = torch.nn.MSELoss()
 
     # Initialize predictor
-    predictor = ConvLSTM(opt,input_channels=1, hidden_channels=[32, 32], kernel_size=3, step=20,
-                        effective_step=list(range(0,20)))
+    predictor = ConvLSTM(opt,input_channels=3, hidden_channels=[32, 32], kernel_size=3, step=1,
+                        effective_step=[0])
 
     if opt.use_gpu:
         predictor.to(opt.device)
@@ -58,10 +58,18 @@ def train():
     Tensor = torch.cuda.FloatTensor if opt.use_gpu else torch.FloatTensor
 
     # Configure data loader
-    datasets = Weather_Dataset(img_dir=opt.train_dataset_path + opt.img_class,
+    datasets1 = Weather_Dataset(img_dir=opt.train_dataset_path + 'Precip',
                                csv_path=opt.train_csv_path,
                                img_size=opt.img_size)
-    dataloader = iter(range(len(datasets)))
+    dataloader1 = iter(range(len(datasets1)))
+    datasets2 = Weather_Dataset(img_dir=opt.train_dataset_path + 'Radar',
+                               csv_path=opt.train_csv_path,
+                               img_size=opt.img_size)
+    dataloader2 = iter(range(len(datasets2)))
+    datasets3 = Weather_Dataset(img_dir=opt.train_dataset_path + 'Wind',
+                               csv_path=opt.train_csv_path,
+                               img_size=opt.img_size)
+    dataloader3 = iter(range(len(datasets3)))
     # dataloader = DataLoader(datasets,batch_size = 16, shuffle=False)
     # start visualization
     if opt.vis:
@@ -75,27 +83,32 @@ def train():
     print('🚀 开始训练！')
 
     for epoch in range(opt.n_epochs):
-        with tqdm(total=len(datasets), bar_format=bar_format) as bar:
-            for i, imgs_index in enumerate(dataloader):
-                imgs = datasets[imgs_index]
+        with tqdm(total=len(datasets1), bar_format=bar_format) as bar:
+            for i, imgs_index in enumerate(dataloader1):
+                imgs1 = datasets1[imgs_index] # precip
+                imgs2 = datasets2[imgs_index] # radar
+                imgs3 = datasets3[imgs_index] # wind
+                imgs = torch.cat([imgs1,imgs2,imgs3], dim=1)
             # for imgs in dataloader:
                 # display the first part of progress bar
                 bar.set_description(f"\33[36m🌌 Epoch {epoch:1d}")
 
                 # prediction ground truths
-                pred_gt = Variable(imgs[20:40,:,:,:].type(Tensor), requires_grad=False)
+                pred_gt = Variable(imgs1[20:40,:,:,:].type(Tensor), requires_grad=False)
     
                 # Configure input
                 pred_in = Variable(imgs[0:20,:,:,:].type(Tensor))
 
                 # -----------------
-                #  Train predictor
+                #  Train predictor 
                 # -----------------
 
                 predictor.zero_grad()
 
                 # Predict a batch of images
-                pred_out = predictor(pred_in)
+                pred_out,_ = predictor(pred_in)
+                pred_out = torch.cat(pred_out, dim=0)
+                # pdb.set_trace()
 
                 # Loss measures generator's ability to fool the discriminator
                 ts_loss = pred_loss(pred_out, pred_gt)

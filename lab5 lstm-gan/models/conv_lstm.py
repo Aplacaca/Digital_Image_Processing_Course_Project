@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 from torch.autograd import Variable
-from backbone import FeatureExtractor
+from torchvision.models.resnet import resnet50
 
 class ConvLSTMCell(nn.Module):
     def __init__(self, input_channels, hidden_channels, kernel_size, device):
@@ -68,7 +68,8 @@ class ConvLSTM(nn.Module):
             cell = ConvLSTMCell(self.input_channels[i], self.hidden_channels[i], self.kernel_size, device=self.device)
             setattr(self, name, cell)
             self._all_layers.append(cell)
-        self.backbone = FeatureExtractor(256,100)
+        # self.backbone = resnet50()
+        self.outprocess = nn.Conv2d(in_channels=32,out_channels=1,kernel_size=(3,3),padding='same')
         
         # self.feature = nn.Sequential(
             # nn.
@@ -87,14 +88,14 @@ class ConvLSTM(nn.Module):
                     (h, c) = getattr(self, name).init_hidden(batch_size=bsize, hidden=self.hidden_channels[i],
                                                              shape=(height, width))
                     internal_state.append((h, c))
-
                 # do forward
                 (h, c) = internal_state[i]
                 x, new_c = getattr(self, name)(x, h, c)
                 internal_state[i] = (x, new_c)
+                x_conv = self.outprocess(x)
             # only record effective steps
             if step in self.effective_step:
-                outputs.append(x)
+                outputs.append(x_conv)
 
         return outputs, (x, new_c)
 
