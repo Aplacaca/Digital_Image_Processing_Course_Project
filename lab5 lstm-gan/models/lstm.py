@@ -18,6 +18,7 @@ from torch import nn
 from torch.autograd import Variable
 from torchvision.utils import save_image
 from torch.utils.data import Dataloader
+from models.backbone import FeatureExtractor
 
 class Chomp1d(nn.Module):
     def __init__(self, chomp_size):
