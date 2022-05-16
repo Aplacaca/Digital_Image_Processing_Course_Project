@@ -1,7 +1,7 @@
 # !/usr/bin/python
 # -*- coding: utf-8 -*-
 """
-@File    :   dcgan.py
+@File    :   dcgan_TrainPipeline.py
 @Time    :   2022/05/14 09:42:21
 @Author  :   Li Ruikun
 @Version :   1.0
@@ -17,52 +17,38 @@ import torch
 from torch.autograd import Variable
 from torchvision.utils import save_image
 
-from config import DefaultConfig
-from dataset import Weather_Dataset
+from TrainPipeline.dataset import Weather_Dataset
 from utils.visualize import Visualizer
-from utils.setup_seed import setup_seed
 from utils.exception_handler import exception_handler
 from models.backbone import FeatureExtractor
 from models.dcgan import Generator as dc_generator, Discriminator as dc_disciminator
 
-# config
-opt = DefaultConfig()
-
-# global config
-setup_seed(opt.seed)
-torch.cuda.set_device(0)
-
-# mkdir
-os.makedirs(opt.result_dir, exist_ok=True)
-os.makedirs(opt.result_dir + opt.img_class + '/', exist_ok=True)
-os.makedirs(opt.save_model_file, exist_ok=True)
-os.makedirs(opt.save_model_file + opt.img_class + '/', exist_ok=True)
-
-
-# def recover_img(imgs, img_class=opt.img_class):
-#     """将图片还原到原始范围"""
-
-#     type_id = ['precip', 'radar', 'wind'].index(img_class.lower())
-#     factor = [10.0, 70.0, 35.0][type_id]
-#     imgs = torch.clamp(input=imgs, min=0, max=factor) / factor * 255.0
-
-#     return imgs
 
 def denormalize(imgs, mean=0.5, variance=0.5):
     return imgs.mul(variance).add(mean) * 255.0
 
 
 @exception_handler
-def train():
+def dcgan_TrainPipeline(opt):
+
+    print('DCGAN! 🎉🎉🎉')
+
+    # mkdir
+    os.makedirs(opt.result_dir, exist_ok=True)
+    os.makedirs(opt.result_dir + opt.img_class + '/', exist_ok=True)
+    os.makedirs(opt.save_model_file, exist_ok=True)
+    os.makedirs(opt.save_model_file + opt.img_class + '/', exist_ok=True)
+
     # Loss function
     adversarial_loss = torch.nn.BCELoss()
 
     # Initialize feature_extractor、generator and discriminator
     feature_extractor = FeatureExtractor(opt.img_size, opt.latent_dim)
+    # feature_extractor.load_state_dict(torch.load('checkpoints/dcgan/Radar/fe_20000.pth'))
     generator = dc_generator(opt)
     discriminator = dc_disciminator(opt)
 
-
+    # device
     if opt.use_gpu:
         feature_extractor.to(opt.device)
         generator.to(opt.device)
@@ -70,10 +56,11 @@ def train():
         adversarial_loss.to(opt.device)
 
     # Optimizers
-    optimizer_fe = torch.optim.Adam(feature_extractor.parameters(), lr=opt.lr, betas=(opt.b1, opt.b2))
-    optimizer_G = torch.optim.Adam(generator.parameters(), lr=opt.lr, betas=(opt.b1, opt.b2))
-    optimizer_D = torch.optim.Adam(discriminator.parameters(), lr=opt.lr, betas=(opt.b1, opt.b2))
+    optimizer_fe = torch.optim.SGD(feature_extractor.parameters(), lr=opt.lr_fe)
+    optimizer_G = torch.optim.Adam(generator.parameters(), lr=opt.lr_g, betas=(opt.b1, opt.b2))
+    optimizer_D = torch.optim.Adam(discriminator.parameters(), lr=opt.lr_d, betas=(opt.b1, opt.b2))
 
+    # Tensor convertion
     Tensor = torch.cuda.FloatTensor if opt.use_gpu else torch.FloatTensor
 
     # Configure data loader
@@ -95,11 +82,11 @@ def train():
 
     for epoch in range(opt.n_epochs):
         with tqdm(total=len(datasets), bar_format=bar_format) as bar:
-            for i, imgs_index in enumerate(dataloader):
-            # i=0
-            # while i < 10000:
-                imgs = datasets[imgs_index]
-                # imgs = datasets[1]
+            # for i, imgs_index in enumerate(dataloader):
+            i=0
+            while i < 10000:
+                # imgs = datasets[imgs_index][:20]
+                imgs = datasets[19]
 
                 # display the first part of progress bar
                 bar.set_description(f"\33[36m🌌 Epoch {epoch:1d}")
@@ -112,30 +99,30 @@ def train():
 
                 # Configure input
                 real_imgs = Variable(imgs.type(Tensor))
+                
+                # Extract feature maps from real images
+                z = feature_extractor(real_imgs)
+                diff = [(z[i]-z[i+1]).detach().cpu().data for i in range(z.shape[0]-1)]
+                sum = np.array([diff[i].abs().sum() for i in range(len(diff))]).sum()
 
                 # -----------------
                 #  Train Generator and Feature Extractor
                 # -----------------
 
-                optimizer_G.zero_grad()
-                optimizer_fe.zero_grad()
+                if i % 5==0:
+                    optimizer_G.zero_grad()
+                    optimizer_fe.zero_grad()
 
-                # # Sample noise as generator input
-                # z = Variable(Tensor(np.random.normal(
-                #     0, 1, (imgs.shape[0], opt.latent_dim))))
-                
-                # Extract feature maps from real images
-                z = feature_extractor(real_imgs)
+                    # Generate a batch of images
+                    fake_imgs = generator(z)
 
-                # Generate a batch of images
-                gen_imgs = generator(z)
+                    # Loss measures generator's ability to fool the discriminator
+                    fake_validity = discriminator(fake_imgs)
+                    g_loss = adversarial_loss(fake_validity, valid)
 
-                # Loss measures generator's ability to fool the discriminator
-                g_loss = adversarial_loss(discriminator(gen_imgs), valid)
-
-                g_loss.backward()
-                optimizer_G.step()
-                optimizer_fe.step()
+                    g_loss.backward()
+                    optimizer_G.step()
+                    optimizer_fe.step()
 
                 # ---------------------
                 #  Train Discriminator
@@ -144,9 +131,10 @@ def train():
                 optimizer_D.zero_grad()
 
                 # Measure discriminator's ability to classify real from generated samples
-                real_loss = adversarial_loss(discriminator(real_imgs), valid)
-                fake_loss = adversarial_loss(
-                    discriminator(gen_imgs.detach()), fake)
+                real_validity = discriminator(real_imgs)
+                fake_validity = discriminator(fake_imgs.detach())
+                real_loss = adversarial_loss(real_validity, valid)
+                fake_loss = adversarial_loss(fake_validity, fake)
                 d_loss = (real_loss + fake_loss) / 2
 
                 d_loss.backward()
@@ -154,7 +142,7 @@ def train():
 
                 # display the last part of progress bar
                 bar.set_postfix_str(
-                    f'D loss: {d_loss.item():.3f}, G loss: {g_loss.item():.3f}\33[0m')
+                    f'D loss: {d_loss.item():.3f}, G loss: {g_loss.item():.3f}, diff: {sum:.2f}\33[0m')
                 bar.update()
 
                 # visualize the loss curve and generated images in visdom
@@ -162,24 +150,23 @@ def train():
                     vis.plot(win='Loss', name='G loss', y=g_loss.item())
                     vis.plot(win='Loss', name='D loss', y=d_loss.item())
                 if opt.vis:
-                    # imgs_ = recover_img(imgs.data[:1], opt.img_class)
-                    # gen_imgs_ = recover_img(gen_imgs.data[:1], opt.img_class)
                     imgs_ = denormalize(imgs.data[:1])
-                    gen_imgs_ = denormalize(gen_imgs.data[:1])
+                    fake_imgs_ = denormalize(fake_imgs.data[:1])
                     vis.img(name='Real', img_=imgs_, nrow=1)
-                    vis.img(name='Fake', img_=gen_imgs_, nrow=1)
+                    vis.img(name='Fake', img_=fake_imgs_, nrow=1)
 
                 # save the model and generated images every 500 batches
                 if i % opt.sample_interval == 0:
-                    # gen_imgs_ = recover_img(gen_imgs.data[:9], opt.img_class)
-                    gen_imgs_ = denormalize(gen_imgs.data[:9])
-                    save_image(gen_imgs_, opt.result_dir + opt.img_class +
+                    fake_imgs_ = denormalize(fake_imgs.data[:9])
+                    save_image(fake_imgs_, opt.result_dir + opt.img_class +
                                '/' + f"{i}.png", nrow=3, normalize=False)
+                    torch.save(feature_extractor.state_dict(),
+                               opt.save_model_file + opt.img_class + '/' + f"fe_{i}.pth")
                     torch.save(generator.state_dict(),
-                               opt.save_model_file + opt.img_class + '/' + 'generator_'+str(i)+'.pth')
+                               opt.save_model_file + opt.img_class + '/' + f'generator_{i}.pth')
                     torch.save(discriminator.state_dict(),
-                               opt.save_model_file + opt.img_class + '/' + 'discriminator_'+str(i)+'.pth')
+                               opt.save_model_file + opt.img_class + '/' + f'discriminator_{i}.pth')
 
 
 if __name__ == '__main__':
-    train()
+    dcgan_TrainPipeline()

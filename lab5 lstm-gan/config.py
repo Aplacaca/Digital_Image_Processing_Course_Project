@@ -24,7 +24,7 @@ class DefaultConfig(object):
     train_csv_path = './data/Train.csv'  # csv file path
     train_dataset_path = './data/Train/'  # image file path
     load_model_path = None  # 加载预训练的模型的路径，为None代表不加载
-    save_model_file = 'checkpoints/GAN/'  # weights file path
+    save_model_file = 'checkpoints/' + gan_model + '/'  # weights file path
     result_dir = 'images_' + gan_model + '/'  # result image path
 
     # 图片参数
@@ -32,8 +32,11 @@ class DefaultConfig(object):
     img_size = 256  # size of each image dimension
 
     # 训练参数
-    n_epochs = 1
-    lr = 2e-4  # initial learning rate
+    n_epochs = 1 # max epochs
+    n_critic = 5 # number of training steps for wgan_gp discriminator per iter
+    lr_fe = 1e-4  # feature_extractor learning rate
+    lr_g = 1e-4  # generator learning rate
+    lr_d = 1e-4  # discriminator learning rate
     latent_dim = 100  # dimensionality of the latent space
     b1 = 0.5  # adam: decay of first order momentum of gradient
     b2 = 0.999  # adam: decay of first order momentum of gradient
@@ -45,7 +48,7 @@ class DefaultConfig(object):
     use_gpu = True  # use GPU
     device = 'cuda' if torch.cuda.is_available() else 'cpu'  # available device
     num_workers = 1  # how many workers for loading data
-    sample_interval = 1000  # print info every N batch
+    sample_interval = 100  # print info every N batch
 
     def parse(self, kwargs):
         """
