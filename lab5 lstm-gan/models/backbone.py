@@ -1,3 +1,15 @@
+# !/usr/bin/python
+# -*- coding: utf-8 -*-
+"""
+@File    :   backbone.py
+@Time    :   2022/05/16 10:55:39
+@Author  :   Li Ruikun
+@Version :   1.0
+@Contact :   1842604700@qq.com
+@License :   (C)Copyright 2022 Li Ruikun, All rights reserved.
+@Desc    :   Network backbone to extractor image features
+"""
+
 import torch
 import torch.nn as nn
 
@@ -74,7 +86,7 @@ class FeatureExtractor(nn.Module):
             nn.Linear(int(32 * (img_size/2**num_pool)**2), 1024),
             nn.ReLU(True),
             nn.Linear(1024, latent_dim),
-            nn.Sigmoid()
+            nn.Tanh()
         )
         
         # 初始化模型参数
