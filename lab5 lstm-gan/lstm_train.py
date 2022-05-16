@@ -5,6 +5,7 @@ import torch
 from torch.autograd import Variable
 from torchvision.utils import save_image
 from torch.utils.data import DataLoader
+from zmq import device
 
 from config import DefaultConfig, TSConfig
 from dataset import Weather_Dataset
@@ -19,7 +20,7 @@ opt = TSConfig()
 
 # global config
 setup_seed(opt.seed)
-torch.cuda.set_device(1)
+torch.cuda.set_device(0)
 
 # mkdir
 os.makedirs(opt.result_dir, exist_ok=True)
@@ -45,7 +46,7 @@ def train():
 
     # Initialize predictor
     predictor = ConvLSTM(opt,input_channels=3, hidden_channels=[32, 32], kernel_size=3, step=1,
-                        effective_step=[0])
+                        effective_step=[0],device = opt.device)
 
     if opt.use_gpu:
         predictor.to(opt.device)
@@ -94,7 +95,7 @@ def train():
                 bar.set_description(f"\33[36m🌌 Epoch {epoch:1d}")
 
                 # prediction ground truths
-                pred_gt = Variable(imgs1[20:40,:,:,:].type(Tensor), requires_grad=False)
+                pred_gt = Variable(imgs2[20:40,:,:,:].type(Tensor), requires_grad=False)
     
                 # Configure input
                 pred_in = Variable(imgs[0:20,:,:,:].type(Tensor))
@@ -126,7 +127,7 @@ def train():
                 if opt.vis and i % 50 == 0:
                     vis.plot(win='Loss', name='TS loss', y=ts_loss.item())
                 if opt.vis:
-                    imgs_ = recover_img(imgs.data[:1], opt.img_class)
+                    imgs_ = recover_img(imgs2.data[:1], opt.img_class)
                     pred_imgs_ = recover_img(pred_out.data[:1], opt.img_class)
                     vis.img(name='Real', img_=imgs_, nrow=1)
                     vis.img(name='Fake', img_=pred_imgs_, nrow=1)

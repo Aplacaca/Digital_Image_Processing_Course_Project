@@ -91,11 +91,11 @@ class TSConfig(object):
     vis = True  # use visdom
     vis_env = 'LSTM'   # visdom env
     seed = 729  # random seed
-    use_gpu = False  # use GPU
-    # device = 'cuda' if torch.cuda.is_available() else 'cpu'  # available device
-    device = "cpu"
+    use_gpu = True  # use GPU
+    device = 'cuda' if torch.cuda.is_available() else 'cpu'  # available device
+    # device = "cpu"
     num_workers = 1  # how many workers for loading data
-    sample_interval = 1000  # print info every N batch
+    sample_interval = 100  # print info every N batch
 
     def parse(self, kwargs):
         """
