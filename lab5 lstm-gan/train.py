@@ -23,6 +23,7 @@ from TrainPipeline.wgan_diff import wgan_Diff
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--model', type=str, default='dcgan', help='the model to train')
+parser.add_argument('--img_class', type=str, default='Radar', help='the image class to generate')
 
 # global config
 setup_seed(729)
@@ -33,7 +34,7 @@ if __name__ == '__main__':
 
     # config
     train_opt = DefaultConfig()
-    train_opt.parse(dict(gan_model=opt.model, vis=False))
+    train_opt.parse(dict(gan_model=opt.model, img_class=opt.img_class, vis=True))
 
     if opt.model == 'dcgan':
         dcgan_TrainPipeline(train_opt)

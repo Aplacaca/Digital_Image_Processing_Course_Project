@@ -32,7 +32,7 @@ class DefaultConfig(object):
     img_size = 256  # size of each image dimension
 
     # 训练参数
-    n_epochs = 1 # max epochs
+    n_epochs = 5 # max epochs
     n_critic = 5 # number of training steps for wgan_gp discriminator per iter
     lr_fe = 1e-4  # feature_extractor learning rate
     lr_g = 1e-4  # generator learning rate
