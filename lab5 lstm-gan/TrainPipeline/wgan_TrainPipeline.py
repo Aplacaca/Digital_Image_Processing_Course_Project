@@ -110,11 +110,11 @@ def wgan_TrainPipeline(opt):
 
     for epoch in range(opt.n_epochs):
         with tqdm(total=len(datasets), bar_format=bar_format) as bar:
-            # for i, imgs_index in enumerate(dataloader):
-            i=0
-            while i < 10000:
-                # imgs = datasets[imgs_index][:20]
-                imgs = datasets[19]
+            for i, imgs_index in enumerate(dataloader):
+            # i=0
+            # while i < 10000:
+                imgs = datasets[imgs_index][:20]
+                # imgs = datasets[19]
 
                 # display the first part of progress bar
                 bar.set_description(f"\33[36m🌌 Epoch {epoch:1d}")

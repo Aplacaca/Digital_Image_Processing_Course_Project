@@ -81,18 +81,18 @@ def dcgan_Diff(opt):
 
     for epoch in range(opt.n_epochs):
         with tqdm(total=len(datasets), bar_format=bar_format) as bar:
-            # for i, imgs_index in enumerate(dataloader):
-            i = 0
-            while i < 10000:
+            for i, imgs_index in enumerate(dataloader):
+            # i = 0
+            # while i < 10000:
                 
                 # Display the first part of progress bar
                 bar.set_description(f"\33[36m🌌 Epoch {epoch:1d}")
 
                 # input images
-                # real_imgs = datasets[imgs_index][1:21]
-                # base_imgs = datasets[imgs_index][0:20]
-                real_imgs = datasets[19][1:21]
-                base_imgs = datasets[19][0:20]
+                real_imgs = datasets[imgs_index][1:21]
+                base_imgs = datasets[imgs_index][0:20]
+                # real_imgs = datasets[19][1:21]
+                # base_imgs = datasets[19][0:20]
                 real_diff = (real_imgs - base_imgs).clamp(-1, 1)
 
                 # Configure input
@@ -157,10 +157,12 @@ def dcgan_Diff(opt):
                     vis.plot(win='Loss', name='G loss', y=g_loss.item())
                     vis.plot(win='Loss', name='D loss', y=d_loss.item())
                 if opt.vis:
+                    base_imgs_ = denormalize(base_imgs.data[:1])
                     real_imgs_ = denormalize(real_imgs.data[:1])
                     fake_imgs_ = denormalize(fake_imgs.data[:1])
                     real_diff_ = denormalize(real_diff.data[:1])
                     fake_diff_ = denormalize(fake_diff.data[:1])
+                    vis.img(name='Base', img_=base_imgs_, nrow=1)
                     vis.img(name='Real', img_=real_imgs_, nrow=1)
                     vis.img(name='Fake', img_=fake_imgs_, nrow=1)
                     vis.img(name='Real_Diff', img_=real_diff_, nrow=1)
