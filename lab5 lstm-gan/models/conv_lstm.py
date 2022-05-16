@@ -3,6 +3,7 @@ import torch.nn as nn
 from torch.autograd import Variable
 from torchvision.models.resnet import resnet50
 
+
 class ConvLSTMCell(nn.Module):
     def __init__(self, input_channels, hidden_channels, kernel_size, device):
         super(ConvLSTMCell, self).__init__()

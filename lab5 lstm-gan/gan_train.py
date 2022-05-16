@@ -144,7 +144,6 @@ def train():
                 optimizer_D.zero_grad()
 
                 # Measure discriminator's ability to classify real from generated samples
-                import pdb;pdb.set_trace()
                 real_loss = adversarial_loss(discriminator(real_imgs), valid)
                 fake_loss = adversarial_loss(
                     discriminator(gen_imgs.detach()), fake)

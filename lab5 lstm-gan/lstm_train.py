@@ -13,7 +13,9 @@ from utils.visualize import Visualizer
 from utils.setup_seed import setup_seed
 from utils.exception_handler import exception_handler
 from models.dcgan import Generator as dc_generator, Discriminator as dc_disciminator
+from models.backbone import FeatureExtractor
 from models.conv_lstm import ConvLSTM
+from gan_train import denormalize
 import pdb
 # config
 opt = TSConfig()
@@ -34,28 +36,45 @@ def recover_img(imgs, img_class=opt.img_class):
 
     type_id = ['precip', 'radar', 'wind'].index(img_class.lower())
     factor = [10., 70., 35.][type_id]
-    imgs = torch.clamp(input=imgs, min=0, max=factor) / factor * 255
+    imgs = torch.clamp(input=imgs, min=0, max=factor) / factor * 255.0
 
     return imgs
 
 
 @exception_handler
 def train():
+    feature_extractor = FeatureExtractor(opt.img_size, opt.latent_dim)
+    generator = dc_generator(opt)
+    discriminator = dc_disciminator(opt)
+    feature_extractor.load_state_dict(torch.load("./checkpoints/GAN/Radar/fe_20000.pth"))
+    generator.load_state_dict(torch.load("./checkpoints/GAN/Radar/generator_20000.pth"))
+    discriminator.load_state_dict("./checkpoints/GAN/Radar/discriminator_9000.pth")
+    
     # Loss function
     pred_loss = torch.nn.MSELoss()
-
+    # Loss function
+    adversarial_loss = torch.nn.BCELoss()
     # Initialize predictor
-    predictor = ConvLSTM(opt,input_channels=3, hidden_channels=[32, 32], kernel_size=3, step=1,
-                        effective_step=[0],device = opt.device)
+    # predictor = ConvLSTM(opt,input_channels=3, hidden_channels=[32, 32], kernel_size=3, step=1,
+    #                     effective_step=[0],device = opt.device)
+    predictor = torch.nn.LSTM(input_size=100, hidden_size=100, batch_first=True)
 
     if opt.use_gpu:
         predictor.to(opt.device)
         pred_loss.to(opt.device)
+        adversarial_loss.to(opt.device)
+        feature_extractor.to(opt.device)
+        generator.to(opt.device)
+        generator.to(opt.device)
 
     # Optimizers
     optimizer_TS = torch.optim.Adam(
         predictor.parameters(), lr=opt.lr, betas=(opt.b1, opt.b2))
 
+    optimizer_fe = torch.optim.Adam(feature_extractor.parameters(), lr=opt.lr, betas=(opt.b1, opt.b2))
+    optimizer_G = torch.optim.Adam(generator.parameters(), lr=opt.lr, betas=(opt.b1, opt.b2))
+    optimizer_D = torch.optim.Adam(discriminator.parameters(), lr=opt.lr, betas=(opt.b1, opt.b2))
+    
     Tensor = torch.cuda.FloatTensor if opt.use_gpu else torch.FloatTensor
 
     # Configure data loader
@@ -89,7 +108,7 @@ def train():
                 imgs1 = datasets1[imgs_index] # precip
                 imgs2 = datasets2[imgs_index] # radar
                 imgs3 = datasets3[imgs_index] # wind
-                imgs = torch.cat([imgs1,imgs2,imgs3], dim=1)
+                # imgs = torch.cat([imgs1,imgs2,imgs3], dim=1)
             # for imgs in dataloader:
                 # display the first part of progress bar
                 bar.set_description(f"\33[36m🌌 Epoch {epoch:1d}")
@@ -98,7 +117,24 @@ def train():
                 pred_gt = Variable(imgs2[20:40,:,:,:].type(Tensor), requires_grad=False)
     
                 # Configure input
-                pred_in = Variable(imgs[0:20,:,:,:].type(Tensor))
+                pred_in = Variable(imgs2[0:20,:,:,:].type(Tensor))
+                
+                fe_out = feature_extractor(pred_in).unsqueeze(0)
+                
+                
+                 # Adversarial ground truths
+                valid = Variable(Tensor(imgs2.shape[0], 1).fill_(
+                    1.0), requires_grad=False)
+                fake = Variable(Tensor(imgs2.shape[0], 1).fill_(
+                    0.0), requires_grad=False)
+
+                # Configure input
+                 # -----------------
+                #  Train Generator and Feature Extractor
+                # -----------------
+
+                optimizer_G.zero_grad()
+                optimizer_fe.zero_grad()
 
                 # -----------------
                 #  Train predictor 
@@ -107,16 +143,35 @@ def train():
                 predictor.zero_grad()
 
                 # Predict a batch of images
-                pred_out,_ = predictor(pred_in)
-                pred_out = torch.cat(pred_out, dim=0)
-                # pdb.set_trace()
+                fe_pred_out,_ = predictor(fe_out)
+                fe_pred_out = fe_pred_out.squeeze(dim=0)
 
+                pred_out = generator(fe_pred_out)
+                # pred_out = generator(fe_out.squeeze(dim=0))
                 # Loss measures generator's ability to fool the discriminator
                 ts_loss = pred_loss(pred_out, pred_gt)
+                
+                # pdb.set_trace()
 
                 ts_loss.backward()
                 optimizer_TS.step()
+                
+                g_loss = adversarial_loss(discriminator(pred_out), valid)
+                g_loss.backward()
+                optimizer_G.step()
+                optimizer_fe.step()
+                
 
+                optimizer_D.zero_grad()
+
+                # Measure discriminator's ability to classify real from generated samples
+                real_loss = adversarial_loss(discriminator(pred_gt), valid)
+                fake_loss = adversarial_loss(
+                    discriminator(pred_out.detach()), fake)
+                d_loss = (real_loss + fake_loss) / 2
+
+                d_loss.backward()
+                optimizer_D.step()
 
                 # display the last part of progress bar
                 bar.set_postfix_str(
@@ -127,14 +182,17 @@ def train():
                 if opt.vis and i % 50 == 0:
                     vis.plot(win='Loss', name='TS loss', y=ts_loss.item())
                 if opt.vis:
-                    imgs_ = recover_img(imgs2.data[:1], opt.img_class)
-                    pred_imgs_ = recover_img(pred_out.data[:1], opt.img_class)
+                    imgs_ = denormalize(imgs2.data[:1])
+                    pred_imgs_ = denormalize(pred_out.data[:1])
+                    # imgs_ = recover_img(imgs2.data[:1], opt.img_class)
+                    # pred_imgs_ = recover_img(pred_out.data[:1], opt.img_class)
+                    # pdb.set_trace()
                     vis.img(name='Real', img_=imgs_, nrow=1)
                     vis.img(name='Fake', img_=pred_imgs_, nrow=1)
 
                 # save the model and generated images every 500 batches
                 if i % opt.sample_interval == 0:
-                    pred_imgs_ = recover_img(pred_out.data[:9], opt.img_class)
+                    pred_imgs_ = denormalize(pred_out.data[:9])
                     save_image(pred_imgs_, opt.result_dir + opt.img_class +
                                '/' + f"{i}.png", nrow=3, normalize=False)
                     torch.save(predictor.state_dict(),
