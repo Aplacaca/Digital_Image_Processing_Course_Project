@@ -6,3 +6,4 @@ lab3\ cifar-10/data_and_checkpoints.zip
 lab4 object\ detection/best.pth
 lab4 object\ detection/img.npy
 lab4 object\ detection/vgg16_reducedfc.pth
+checkpoints/

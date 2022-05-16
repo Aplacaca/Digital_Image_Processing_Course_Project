@@ -46,9 +46,9 @@ def train():
     feature_extractor = FeatureExtractor(opt.img_size, opt.latent_dim)
     generator = dc_generator(opt)
     discriminator = dc_disciminator(opt)
-    feature_extractor.load_state_dict(torch.load("./checkpoints/GAN/Radar/fe_20000.pth"))
-    generator.load_state_dict(torch.load("./checkpoints/GAN/Radar/generator_20000.pth"))
-    discriminator.load_state_dict("./checkpoints/GAN/Radar/discriminator_9000.pth")
+    feature_extractor.load_state_dict(torch.load("./checkpoints/dcgan/Radar/fe_20000.pth"))
+    generator.load_state_dict(torch.load("./checkpoints/dcgan/Radar/generator_20000.pth"))
+    discriminator.load_state_dict(torch.load("./checkpoints/dcgan/Radar/discriminator_9000.pth"))
     
     # Loss function
     pred_loss = torch.nn.MSELoss()
@@ -65,7 +65,7 @@ def train():
         adversarial_loss.to(opt.device)
         feature_extractor.to(opt.device)
         generator.to(opt.device)
-        generator.to(opt.device)
+        discriminator.to(opt.device)
 
     # Optimizers
     optimizer_TS = torch.optim.Adam(
@@ -123,10 +123,10 @@ def train():
                 
                 
                  # Adversarial ground truths
-                valid = Variable(Tensor(imgs2.shape[0], 1).fill_(
-                    1.0), requires_grad=False)
-                fake = Variable(Tensor(imgs2.shape[0], 1).fill_(
-                    0.0), requires_grad=False)
+                valid = Variable(Tensor(pred_in.shape[0], 1).fill_(
+                    1.0), requires_grad=False).to(opt.device)
+                fake = Variable(Tensor(pred_in.shape[0], 1).fill_(
+                    0.0), requires_grad=False).to(opt.device)
 
                 # Configure input
                  # -----------------
@@ -140,7 +140,6 @@ def train():
                 #  Train predictor 
                 # -----------------
 
-                predictor.zero_grad()
 
                 # Predict a batch of images
                 fe_pred_out,_ = predictor(fe_out)
@@ -149,18 +148,14 @@ def train():
                 pred_out = generator(fe_pred_out)
                 # pred_out = generator(fe_out.squeeze(dim=0))
                 # Loss measures generator's ability to fool the discriminator
-                ts_loss = pred_loss(pred_out, pred_gt)
-                
-                # pdb.set_trace()
-
-                ts_loss.backward()
-                optimizer_TS.step()
-                
                 g_loss = adversarial_loss(discriminator(pred_out), valid)
                 g_loss.backward()
                 optimizer_G.step()
                 optimizer_fe.step()
                 
+                
+                # pdb.set_trace()
+
 
                 optimizer_D.zero_grad()
 
@@ -173,6 +168,13 @@ def train():
                 d_loss.backward()
                 optimizer_D.step()
 
+                predictor.zero_grad()
+                
+                ts_loss = pred_loss(pred_out.detach(), pred_gt)
+                # pdb.set_trace()
+                # ts_loss.backward()
+                optimizer_TS.step()
+                
                 # display the last part of progress bar
                 bar.set_postfix_str(
                     f'TS loss: {ts_loss.item():.3f}\33[0m')
