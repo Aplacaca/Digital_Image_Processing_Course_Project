@@ -47,8 +47,8 @@ def train():
     generator = dc_generator(opt)
     discriminator = dc_disciminator(opt)
     feature_extractor.load_state_dict(torch.load("./checkpoints/dcgan/Radar/fe_20000.pth"))
-    generator.load_state_dict(torch.load("./checkpoints/dcgan/Radar/generator_20000.pth"))
-    discriminator.load_state_dict(torch.load("./checkpoints/dcgan/Radar/discriminator_9000.pth"))
+    # generator.load_state_dict(torch.load("./checkpoints/dcgan/Radar/generator_20000.pth"))
+    discriminator.load_state_dict(torch.load("./checkpoints/dcgan/Radar/discriminator_20000.pth"))
     
     # Loss function
     pred_loss = torch.nn.MSELoss()
@@ -57,7 +57,7 @@ def train():
     # Initialize predictor
     # predictor = ConvLSTM(opt,input_channels=3, hidden_channels=[32, 32], kernel_size=3, step=1,
     #                     effective_step=[0],device = opt.device)
-    predictor = torch.nn.LSTM(input_size=100, hidden_size=100, batch_first=True)
+    predictor = torch.nn.LSTM(input_size=100, hidden_size=100, batch_first=True,num_layers=5)
 
     if opt.use_gpu:
         predictor.to(opt.device)
@@ -111,6 +111,13 @@ def train():
                 # imgs = torch.cat([imgs1,imgs2,imgs3], dim=1)
             # for imgs in dataloader:
                 # display the first part of progress bar
+                # imgs2_diff = Variable((imgs2[1:21,:,:,:] - imgs2[0:20,:,:,:]).type(Tensor))
+                
+                # if diff
+                # pred_gt = Variable(imgs2_diff[20:40,:,:,:].type(Tensor), requires_grad=False)
+                # pred_in = Variable(imgs2_diff[0:20,:,:,:].type(Tensor))
+                #
+                
                 bar.set_description(f"\33[36m🌌 Epoch {epoch:1d}")
 
                 # prediction ground truths
@@ -119,9 +126,9 @@ def train():
                 # Configure input
                 pred_in = Variable(imgs2[0:20,:,:,:].type(Tensor))
                 
+                
                 fe_out = feature_extractor(pred_in).unsqueeze(0)
-                
-                
+
                  # Adversarial ground truths
                 valid = Variable(Tensor(pred_in.shape[0], 1).fill_(
                     1.0), requires_grad=False).to(opt.device)
@@ -145,7 +152,14 @@ def train():
                 fe_pred_out,_ = predictor(fe_out)
                 fe_pred_out = fe_pred_out.squeeze(dim=0)
 
-                pred_out = generator(fe_pred_out)
+                # with torch.no_grad():                
+                #     mean_fe_pred_out = fe_pred_out.mean()
+                #     var_fe_pred_out = fe_pred_out.var()
+                
+                # z =  Variable(Tensor(np.random.normal(
+                #     mean_fe_pred_out.item(), var_fe_pred_out.item(), (pred_in.shape[0], opt.latent_dim))))
+
+                pred_out = generator(fe_pred_out)# + pred_in
                 # pred_out = generator(fe_out.squeeze(dim=0))
                 # Loss measures generator's ability to fool the discriminator
                 g_loss = adversarial_loss(discriminator(pred_out), valid)
