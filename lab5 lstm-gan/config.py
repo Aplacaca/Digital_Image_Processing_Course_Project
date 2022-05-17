@@ -90,23 +90,28 @@ class TSConfig(object):
     # 图片参数
     channels = 1  # number of image channels
     img_size = 256  # size of each image dimension
-
+    
     # 训练参数
-    n_epochs = 1
-    lr = 2e-4  # initial learning rate
+    n_epochs = 1  # max epochs
+    n_critic = 5  # number of training steps for wgan_gp discriminator per iter
+    batch_size = 40 # DO NOT CHANGE!
+    lr = 1e-4  # feature_extractor learning rate
+    lr_g = 1e-4  # generator learning rate
+    lr_d = 1e-4  # discriminator learning rate
     latent_dim = 100  # dimensionality of the latent space
+    code_dim = 2 # latent code for InfoGAN
     b1 = 0.5  # adam: decay of first order momentum of gradient
     b2 = 0.999  # adam: decay of first order momentum of gradient
 
     # 其他参数
     vis = True  # use visdom
-    vis_env = 'LSTM_GAN'   # visdom env
+    vis_env = 'LSTM-GAN'   # visdom env
     seed = 729  # random seed
-    use_gpu = True  # use GPU
-    device = 'cuda' if torch.cuda.is_available() else 'cpu'  # available device
-    # device = "cpu"
-    num_workers = 1  # how many workers for loading data
-    sample_interval = 1000  # print info every N batch
+    use_gpu = False  # use GPU
+    multi_gpu = False
+    device = 'cpu'#'cuda' if torch.cuda.is_available() else 'cpu'  # available device
+    num_workers = 8  # how many workers for loading data
+    sample_interval = 50  # print info every N batch
 
     def parse(self, kwargs):
         """

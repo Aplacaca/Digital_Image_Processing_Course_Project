@@ -2,6 +2,7 @@ import os
 import numpy as np
 from tqdm import tqdm
 import torch
+import torch.autograd as autograd
 from torch.autograd import Variable
 from torchvision.utils import save_image
 from torch.utils.data import DataLoader
@@ -9,7 +10,8 @@ from torch.utils.data import DataLoader
 from TrainPipeline.dataset import Weather_Dataset
 from utils.visualize import Visualizer
 from utils.exception_handler import exception_handler
-from models.dcgan import Generator as dc_generator, Discriminator as dc_disciminator
+# from models.dcgan import Generator, Discriminator
+from models.wgan_gp import Generator, Discriminator
 from models.backbone import FeatureExtractor
 from models.conv_lstm import ConvLSTM
 from TrainPipeline.dcgan_TrainPipeline import denormalize
@@ -25,6 +27,31 @@ def recover_img(imgs, img_class='radar'):
 
     return imgs
 
+def compute_gradient_penalty(D, real_samples, fake_samples, Tensor):
+    """Calculates the gradient penalty loss for WGAN GP"""
+    
+    # Random weight term for interpolation between real and fake samples
+    alpha = Tensor(np.random.random((real_samples.size(0), 1, 1, 1)))
+    
+    # Get random interpolation between real and fake samples
+    interpolates = (alpha * real_samples + ((1 - alpha) * fake_samples)).requires_grad_(True)
+    d_interpolates = D(interpolates)
+    fake = Variable(Tensor(real_samples.shape[0], 1).fill_(1.0), requires_grad=False)
+    
+    # Get gradient w.r.t. interpolates
+    gradients = autograd.grad(
+        outputs=d_interpolates,
+        inputs=interpolates,
+        grad_outputs=fake,
+        create_graph=True,
+        retain_graph=True,
+        only_inputs=True,
+    )[0]
+    gradients = gradients.view(gradients.size(0), -1)
+    gradient_penalty = ((gradients.norm(2, dim=1) - 1) ** 2).mean()
+    
+    return gradient_penalty
+
 
 @exception_handler
 def lstm_TrainPipeline(opt):
@@ -38,13 +65,14 @@ def lstm_TrainPipeline(opt):
     os.makedirs(opt.save_model_file + opt.img_class + '/', exist_ok=True)
 
     feature_extractor = FeatureExtractor(opt.img_size, opt.latent_dim)
-    generator = dc_generator(opt)
-    discriminator = dc_disciminator(opt)
+    generator = Generator(opt, [1, opt.img_size, opt.img_size])
+    discriminator = Discriminator([1, opt.img_size, opt.img_size])
     feature_extractor.load_state_dict(torch.load(
-        "./checkpoints/dcgan/Radar/fe_20000.pth"))
-    # generator.load_state_dict(torch.load("./checkpoints/dcgan/Radar/generator_20000.pth"))
+        "./checkpoints/wgan/Radar/fe_9_23000.pth"))
+    generator.load_state_dict(torch.load(\
+        "./checkpoints/wgan/Radar/generator_9_23000.pth"))
     discriminator.load_state_dict(torch.load(
-        "./checkpoints/dcgan/Radar/discriminator_20000.pth"))
+        "./checkpoints/wgan/Radar/discriminator_9_23000.pth"))
 
     # Loss function
     pred_loss = torch.nn.MSELoss()
@@ -68,12 +96,10 @@ def lstm_TrainPipeline(opt):
     optimizer_TS = torch.optim.Adam(
         predictor.parameters(), lr=opt.lr, betas=(opt.b1, opt.b2))
 
-    optimizer_fe = torch.optim.Adam(
-        feature_extractor.parameters(), lr=opt.lr, betas=(opt.b1, opt.b2))
-    optimizer_G = torch.optim.Adam(
-        generator.parameters(), lr=opt.lr, betas=(opt.b1, opt.b2))
-    optimizer_D = torch.optim.Adam(
-        discriminator.parameters(), lr=opt.lr, betas=(opt.b1, opt.b2))
+    optimizer_fe = torch.optim.SGD(feature_extractor.parameters(), lr=opt.lr)
+    optimizer_G = torch.optim.RMSprop(generator.parameters(), lr=opt.lr_g)
+    optimizer_D = torch.optim.RMSprop(discriminator.parameters(), lr=opt.lr_d)
+    optimizer_P = torch.optim.RMSprop(predictor.parameters(), lr=opt.lr_d)
 
     Tensor = torch.cuda.FloatTensor if opt.use_gpu else torch.FloatTensor
 
@@ -85,7 +111,8 @@ def lstm_TrainPipeline(opt):
     datasets2 = Weather_Dataset(img_dir=opt.train_dataset_path + 'Radar',
                                 csv_path=opt.train_csv_path,
                                 img_size=opt.img_size)
-    dataloader2 = iter(range(len(datasets2)))
+    dataloader2 = DataLoader(datasets2, batch_size=40, shuffle=True,
+                        num_workers=opt.num_workers, drop_last=True)
     datasets3 = Weather_Dataset(img_dir=opt.train_dataset_path + 'Wind',
                                 csv_path=opt.train_csv_path,
                                 img_size=opt.img_size)
@@ -93,41 +120,27 @@ def lstm_TrainPipeline(opt):
     # dataloader = DataLoader(datasets,batch_size = 16, shuffle=False)
     # start visualization
     if opt.vis:
-        vis = Visualizer(opt.vis_env, port=8099)
+        vis = Visualizer(opt.vis_env)
 
     # ----------
     #  Training
     # ----------
 
+    lambda_gp = 10
     bar_format = '{desc}{n_fmt:>3s}/{total_fmt:<5s} |{bar}|{postfix}'
     print('🚀 开始训练！')
 
     for epoch in range(opt.n_epochs):
-        with tqdm(total=len(datasets1), bar_format=bar_format) as bar:
-            for i, imgs_index in enumerate(dataloader1):
-                imgs1 = datasets1[imgs_index]  # precip
-                imgs2 = datasets2[imgs_index]  # radar
-                imgs3 = datasets3[imgs_index]  # wind
-                # imgs = torch.cat([imgs1,imgs2,imgs3], dim=1)
-            # for imgs in dataloader:
-                # display the first part of progress bar
-                # imgs2_diff = Variable((imgs2[1:21,:,:,:] - imgs2[0:20,:,:,:]).type(Tensor))
-
-                # if diff
-                # pred_gt = Variable(imgs2_diff[20:40,:,:,:].type(Tensor), requires_grad=False)
-                # pred_in = Variable(imgs2_diff[0:20,:,:,:].type(Tensor))
-                #
+        with tqdm(total=len(dataloader2), bar_format=bar_format) as bar:
+            for i, imgs in enumerate(dataloader2):
 
                 bar.set_description(f"\33[36m🌌 Epoch {epoch:1d}")
-
                 # prediction ground truths
-                pred_gt = Variable(imgs2[20:40, :, :, :].type(
+                pred_gt = Variable(imgs[20:40, :, :].type(
                     Tensor), requires_grad=False)
 
                 # Configure input
-                pred_in = Variable(imgs2[0:20, :, :, :].type(Tensor))
-
-                fe_out = feature_extractor(pred_in).unsqueeze(0)
+                pred_in = Variable(imgs[0:20,:, :].type(Tensor))
 
                 # Adversarial ground truths
                 valid = Variable(Tensor(pred_in.shape[0], 1).fill_(
@@ -136,55 +149,59 @@ def lstm_TrainPipeline(opt):
                     0.0), requires_grad=False).to(opt.device)
 
                 # Configure input
+
+                # ---------------------
+                #  Train Discriminator 
+                # ---------------------
+
+                optimizer_D.zero_grad()
+
                 # -----------------
-                #  Train Generator and Feature Extractor
+                #  Train predictor 
                 # -----------------
 
-                optimizer_G.zero_grad()
-                optimizer_fe.zero_grad()
-
-                # -----------------
-                #  Train predictor
-                # -----------------
-
+                fe_out = feature_extractor(pred_in).unsqueeze(0)
                 # Predict a batch of images
                 fe_pred_out, _ = predictor(fe_out)
                 fe_pred_out = fe_pred_out.squeeze(dim=0)
 
-                # with torch.no_grad():
-                #     mean_fe_pred_out = fe_pred_out.mean()
-                #     var_fe_pred_out = fe_pred_out.var()
-
-                # z =  Variable(Tensor(np.random.normal(
-                #     mean_fe_pred_out.item(), var_fe_pred_out.item(), (pred_in.shape[0], opt.latent_dim))))
-
-                pred_out = generator(fe_pred_out)  # + pred_in
-                # pred_out = generator(fe_out.squeeze(dim=0))
-                # Loss measures generator's ability to fool the discriminator
-                g_loss = adversarial_loss(discriminator(pred_out), valid)
-                g_loss.backward()
-                optimizer_G.step()
-                optimizer_fe.step()
-
-                # pdb.set_trace()
-
-                optimizer_D.zero_grad()
-
-                # Measure discriminator's ability to classify real from generated samples
-                real_loss = adversarial_loss(discriminator(pred_gt), valid)
-                fake_loss = adversarial_loss(
-                    discriminator(pred_out.detach()), fake)
-                d_loss = (real_loss + fake_loss) / 2
-
+                pred_out = generator(fe_pred_out)  
+                
+                # Real images
+                real_validity = discriminator(pred_gt)
+                # Fake images
+                fake_validity = discriminator(pred_out.detach())
+                # Gradient penalty
+                gradient_penalty = compute_gradient_penalty\
+                    (discriminator, pred_gt.data, pred_out.detach().data, Tensor)
+                
+                d_loss = -torch.mean(real_validity) + \
+                    torch.mean(fake_validity) + lambda_gp * gradient_penalty
+                    
                 d_loss.backward()
                 optimizer_D.step()
+                
+                # -----------------
+                #  Train Generator and Feature Extractor predictor every n_critic steps
+                # -----------------
+                optimizer_G.zero_grad()
+                optimizer_fe.zero_grad()
+                optimizer_P.zero_grad()
+                
+                if i % opt.n_critic == 0:
+                # Loss measures generator's ability to fool the discriminator
+                    
+                    fake_validity = discriminator(pred_out)
+                    g_loss = -torch.mean(fake_validity)
+                    g_loss.backward(retain_graph=True)
+                    optimizer_G.step()
+                    optimizer_fe.step()
+                    optimizer_P.step()
 
-                predictor.zero_grad()
-
-                ts_loss = pred_loss(pred_out.detach(), pred_gt)
-                # pdb.set_trace()
-                # ts_loss.backward()
-                optimizer_TS.step()
+                    ts_loss = pred_loss(pred_out.detach(), pred_gt)
+                    # pdb.set_trace()
+                    # ts_loss.backward()
+                    optimizer_TS.step()
 
                 # display the last part of progress bar
                 bar.set_postfix_str(
@@ -195,7 +212,7 @@ def lstm_TrainPipeline(opt):
                 if opt.vis and i % 50 == 0:
                     vis.plot(win='Loss', name='TS loss', y=ts_loss.item())
                 if opt.vis:
-                    imgs_ = denormalize(imgs2.data[:1])
+                    imgs_ = denormalize(imgs.data[:1])
                     pred_imgs_ = denormalize(pred_out.data[:1])
                     # imgs_ = recover_img(imgs2.data[:1], opt.img_class)
                     # pred_imgs_ = recover_img(pred_out.data[:1], opt.img_class)
