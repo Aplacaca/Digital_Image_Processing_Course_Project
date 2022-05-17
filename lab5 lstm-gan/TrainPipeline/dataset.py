@@ -15,7 +15,71 @@ import numpy as np
 import pandas as pd
 from PIL import Image
 from torchvision import transforms
-from torch.utils.data import Dataset
+from torch.utils.data import Dataset, DataLoader
+
+
+# class ParseCSV:
+#     """解析csv数据集"""
+
+#     def __init__(self, csv_path):
+#         self.csv_path = csv_path
+
+#     def __call__(self):
+#         """
+
+#         Returns:
+#         ------- 
+#         data_list: List[List[str]]
+#             数据集的路径列表，每组数据包含40张图片的路径
+#         """
+
+#         data_list = []
+#         csv_data = pd.read_csv(self.csv_path)
+#         for line in csv_data.values:
+#             data_list.append(line.tolist())
+
+#         return data_list
+
+
+# class Weather_Dataset(Dataset):
+
+#     def __init__(self, img_dir, csv_path, img_size):
+#         self.img_dir = img_dir
+#         self.img_size = img_size
+#         self.data_list = ParseCSV(csv_path)()  # List[List[str]]
+#         self.transform = transforms.Compose([
+#             transforms.Resize((self.img_size, self.img_size)),
+#             transforms.ToTensor(),
+#             transforms.Normalize(mean=[0.5], std=[0.5])
+#         ])
+
+#     def __getitem__(self, index):
+#         """
+
+#         Returns:
+#         ------- 
+#         img: Tensor
+#             一段时序图片，序列形状为(40, 1, 224, 224)
+#         """
+
+#         img_path_prefix = self.img_dir + '/' + \
+#             self.img_dir.split('/')[-1].lower() + '_'
+#         img_paths = [img_path_prefix + path for path in self.data_list[index]]
+
+#         # read images
+#         try:
+#             imgs = [Image.open(img_path) for img_path in img_paths]
+#         except:
+#             print(img_paths)
+#             raise Exception('Error: cannot open image')
+
+#         imgs = list(map(self.transform, imgs))
+
+#         imgs = torch.stack(imgs, dim=0)
+#         return imgs
+
+#     def __len__(self):
+#         return len(self.data_list)
 
 
 class ParseCSV:
@@ -30,13 +94,14 @@ class ParseCSV:
         Returns:
         ------- 
         data_list: List[List[str]]
-            数据集的路径列表，每组数据包含40张图片的路径
+            数据集的路径列表，把每组40张图片按顺序放在同一个列表中
         """
 
         data_list = []
         csv_data = pd.read_csv(self.csv_path)
         for line in csv_data.values:
-            data_list.append(line.tolist())
+            for column in range(40):
+                data_list.append(line[column])
 
         return data_list
 
@@ -46,7 +111,7 @@ class Weather_Dataset(Dataset):
     def __init__(self, img_dir, csv_path, img_size):
         self.img_dir = img_dir
         self.img_size = img_size
-        self.data_list = ParseCSV(csv_path)()  # List[List[str]]  # ! TODO
+        self.data_list = ParseCSV(csv_path)()  # List[List[str]]
         self.transform = transforms.Compose([
             transforms.Resize((self.img_size, self.img_size)),
             transforms.ToTensor(),
@@ -59,46 +124,36 @@ class Weather_Dataset(Dataset):
         Returns:
         ------- 
         img: Tensor
-            一段时序图片，序列形状为(40, 1, 224, 224)
+            一张时序图片，形状为(1, 224, 224)
         """
 
         img_path_prefix = self.img_dir + '/' + \
             self.img_dir.split('/')[-1].lower() + '_'
-        img_paths = [img_path_prefix + path for path in self.data_list[index]]
+        img_path = img_path_prefix + self.data_list[index]
 
         # read images
         try:
-            imgs = [Image.open(img_path) for img_path in img_paths]
+            img = Image.open(img_path)
         except:
-            print(img_paths)
+            print(img_path)
             raise Exception('Error: cannot open image')
 
-        # # transform1: resize
-        # resize = transforms.Resize((self.img_size, self.img_size))
-        # imgs = list(map(lambda img: resize(img), imgs))
-        # # transform2: to tensor
-        # PIL2Tensor = (lambda img: torch.from_numpy(
-        #     np.asarray(img)).float().unsqueeze(0))
-        # imgs = list(map(PIL2Tensor, imgs))
-        # # transform3: zip gray scale
-        # type = self.img_dir.split('/')[-1].lower()
-        # type_id = ['precip', 'radar', 'wind'].index(type)
-        # imgs = list(
-        #     map(lambda img: img * [10.0, 70.0, 35.0][type_id] / 255.0, imgs))
+        # process images
+        img = self.transform(img)
 
-        imgs = list(map(self.transform, imgs))
-
-        imgs = torch.stack(imgs, dim=0)
-        return imgs
+        return img
 
     def __len__(self):
         return len(self.data_list)
 
 
 if __name__ == '__main__':
-    dataset = Weather_Dataset(img_dir='weather_data/train/Precip',
-                              csv_path='weather_data/dataset_train.csv',
-                              img_size=224)
+    dataset = Weather_Dataset(img_dir='../data/Train/Precip',
+                              csv_path='../data/Train.csv',
+                              img_size=256)
+    
+    dataloader = DataLoader(dataset, batch_size=40, shuffle=True,
+                        num_workers=4, drop_last=True)
 
-    for i in range(len(dataset)):
-        print(dataset[i][40])
+    for i, data in enumerate(dataloader):
+        print(data.shape)
