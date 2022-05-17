@@ -78,6 +78,10 @@ def wgan_Diff(opt):
     discriminator = wgan_disciminator([1, opt.img_size, opt.img_size])
 
     # device
+    if opt.multi_gpu:
+        feature_extractor = torch.nn.DataParallel(feature_extractor)
+        generator = torch.nn.DataParallel(generator)
+        discriminator = torch.nn.DataParallel(discriminator)
     if opt.use_gpu:
         feature_extractor.to(opt.device)
         generator.to(opt.device)
