@@ -111,7 +111,7 @@ def lstm_TrainPipeline(opt):
     datasets2 = Weather_Dataset(img_dir=opt.train_dataset_path + 'Radar',
                                 csv_path=opt.train_csv_path,
                                 img_size=opt.img_size)
-    dataloader2 = DataLoader(datasets2, batch_size=40, shuffle=True,
+    dataloader2 = DataLoader(datasets2, batch_size=40, shuffle=False,
                         num_workers=opt.num_workers, drop_last=True)
     datasets3 = Weather_Dataset(img_dir=opt.train_dataset_path + 'Wind',
                                 csv_path=opt.train_csv_path,
