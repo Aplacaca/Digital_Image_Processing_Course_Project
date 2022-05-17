@@ -37,15 +37,17 @@ def denormalize(imgs, mean=0.5, variance=0.5):
 # Gradient penalty of WGAN-GP
 def compute_gradient_penalty(D, real_samples, fake_samples, Tensor):
     """Calculates the gradient penalty loss for WGAN GP"""
-    
+
     # Random weight term for interpolation between real and fake samples
     alpha = Tensor(np.random.random((real_samples.size(0), 1, 1, 1)))
-    
+
     # Get random interpolation between real and fake samples
-    interpolates = (alpha * real_samples + ((1 - alpha) * fake_samples)).requires_grad_(True)
+    interpolates = (alpha * real_samples + ((1 - alpha)
+                    * fake_samples)).requires_grad_(True)
     d_interpolates = D(interpolates)
-    fake = Variable(Tensor(real_samples.shape[0], 1).fill_(1.0), requires_grad=False)
-    
+    fake = Variable(Tensor(real_samples.shape[0], 1).fill_(
+        1.0), requires_grad=False)
+
     # Get gradient w.r.t. interpolates
     gradients = autograd.grad(
         outputs=d_interpolates,
@@ -57,7 +59,7 @@ def compute_gradient_penalty(D, real_samples, fake_samples, Tensor):
     )[0]
     gradients = gradients.view(gradients.size(0), -1)
     gradient_penalty = ((gradients.norm(2, dim=1) - 1) ** 2).mean()
-    
+
     return gradient_penalty
 
 
@@ -84,7 +86,8 @@ def wgan_TrainPipeline(opt):
         discriminator.to(opt.device)
 
     # Optimizers
-    optimizer_fe = torch.optim.SGD(feature_extractor.parameters(), lr=opt.lr_fe)
+    optimizer_fe = torch.optim.SGD(
+        feature_extractor.parameters(), lr=opt.lr_fe)
     optimizer_G = torch.optim.RMSprop(generator.parameters(), lr=opt.lr_g)
     optimizer_D = torch.optim.RMSprop(discriminator.parameters(), lr=opt.lr_d)
 
@@ -96,7 +99,7 @@ def wgan_TrainPipeline(opt):
                                csv_path=opt.train_csv_path,
                                img_size=opt.img_size)
     dataloader = DataLoader(datasets, batch_size=40, shuffle=True,
-                        num_workers=opt.num_workers, drop_last=True)
+                            num_workers=opt.num_workers, drop_last=True)
 
     # start visualization
     if opt.vis:
@@ -125,23 +128,27 @@ def wgan_TrainPipeline(opt):
                 # ---------------------
 
                 optimizer_D.zero_grad()
-                
+
                 # Extract feature maps from real images
                 z = feature_extractor(real_imgs)
-                diff = [(z[i]-z[i+1]).detach().cpu().data for i in range(z.shape[0]-1)]
-                sum = np.array([diff[i].abs().sum() for i in range(len(diff))]).sum()
+                diff = [
+                    (z[i]-z[i+1]).detach().cpu().data for i in range(z.shape[0]-1)]
+                sum = np.array([diff[i].abs().sum()
+                               for i in range(len(diff))]).sum()
 
                 # Generate a batch of images
                 fake_imgs = generator(z)
-                
+
                 # Real images
                 real_validity = discriminator(real_imgs)
                 # Fake images
                 fake_validity = discriminator(fake_imgs.detach())
                 # Gradient penalty
-                gradient_penalty = compute_gradient_penalty(discriminator, real_imgs.data, fake_imgs.detach().data, Tensor)
+                gradient_penalty = compute_gradient_penalty(
+                    discriminator, real_imgs.data, fake_imgs.detach().data, Tensor)
                 # Adversarial loss
-                d_loss = -torch.mean(real_validity) + torch.mean(fake_validity) + lambda_gp * gradient_penalty
+                d_loss = -torch.mean(real_validity) + \
+                    torch.mean(fake_validity) + lambda_gp * gradient_penalty
 
                 # Backward and Optimize
                 d_loss.backward()
@@ -188,13 +195,8 @@ def wgan_TrainPipeline(opt):
                                    opt.save_model_file + opt.img_class + '/' + f'generator_{epoch}_{i}.pth')
                         torch.save(discriminator.state_dict(),
                                    opt.save_model_file + opt.img_class + '/' + f'discriminator_{epoch}_{i}.pth')
-                
+
                 # display the last part of progress bar
                 bar.set_postfix_str(
                     f'D loss: {d_loss.item():.3f}, G loss: {g_loss.item():.3f}, Difff: {sum:.2f}\33[0m')
                 bar.update()
-                
-
-
-if __name__ == '__main__':
-    wgan_TrainPipeline()
