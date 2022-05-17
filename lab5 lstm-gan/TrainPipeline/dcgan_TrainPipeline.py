@@ -45,11 +45,20 @@ def dcgan_TrainPipeline(opt):
 
     # Initialize feature_extractor、generator and discriminator
     feature_extractor = FeatureExtractor(opt.img_size, opt.latent_dim)
-    # feature_extractor.load_state_dict(torch.load('checkpoints/dcgan/Radar/fe_20000.pth'))
     generator = dc_generator(opt)
     discriminator = dc_disciminator(opt)
 
+    # Load model
+    # feature_extractor.load_state_dict(torch.load('checkpoints/dcgan/Radar/fe_7_0.pth'))
+    # generator.load_state_dict(torch.load('checkpoints/dcgan/Radar/generator_7_0.pth'))
+    # discriminator.load_state_dict(torch.load('checkpoints/dcgan/Radar/discriminator_7_0.pth'))
+
     # device
+    if opt.multi_gpu:
+        feature_extractor = torch.nn.DataParallel(feature_extractor)
+        generator = torch.nn.DataParallel(generator)
+        discriminator = torch.nn.DataParallel(discriminator)
+        adversarial_loss = torch.nn.DataParallel(adversarial_loss)
     if opt.use_gpu:
         feature_extractor.to(opt.device)
         generator.to(opt.device)
@@ -118,8 +127,8 @@ def dcgan_TrainPipeline(opt):
                     # Loss measures generator's ability to fool the discriminator
                     fake_validity = discriminator(fake_imgs)
                     g_loss = adversarial_loss(fake_validity, valid)
-
                     g_loss.backward()
+                    
                     optimizer_G.step()
                     optimizer_fe.step()
 

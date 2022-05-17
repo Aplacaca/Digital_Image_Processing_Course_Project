@@ -49,6 +49,11 @@ def dcgan_Diff(opt):
     discriminator = dc_disciminator(opt)
 
     # device
+    if opt.multi_gpu:
+        feature_extractor = torch.nn.DataParallel(feature_extractor)
+        generator = torch.nn.DataParallel(generator)
+        discriminator = torch.nn.DataParallel(discriminator)
+        adversarial_loss = torch.nn.DataParallel(adversarial_loss)
     if opt.use_gpu:
         feature_extractor.to(opt.device)
         generator.to(opt.device)

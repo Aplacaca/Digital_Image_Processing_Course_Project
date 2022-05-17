@@ -32,12 +32,14 @@ class DefaultConfig(object):
     img_size = 256  # size of each image dimension
 
     # 训练参数
-    n_epochs = 10  # max epochs
+    n_epochs = 1  # max epochs
     n_critic = 5  # number of training steps for wgan_gp discriminator per iter
+    batch_size = 40 # DO NOT CHANGE!
     lr_fe = 1e-4  # feature_extractor learning rate
     lr_g = 1e-4  # generator learning rate
     lr_d = 1e-4  # discriminator learning rate
     latent_dim = 100  # dimensionality of the latent space
+    code_dim = 2 # latent code for InfoGAN
     b1 = 0.5  # adam: decay of first order momentum of gradient
     b2 = 0.999  # adam: decay of first order momentum of gradient
 
@@ -46,9 +48,10 @@ class DefaultConfig(object):
     vis_env = 'LSTM-GAN'   # visdom env
     seed = 729  # random seed
     use_gpu = True  # use GPU
+    multi_gpu = False
     device = 'cuda' if torch.cuda.is_available() else 'cpu'  # available device
     num_workers = 8  # how many workers for loading data
-    sample_interval = 1000  # print info every N batch
+    sample_interval = 50  # print info every N batch
 
     def parse(self, kwargs):
         """

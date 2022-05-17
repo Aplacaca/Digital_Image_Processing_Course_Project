@@ -10,6 +10,7 @@
 @Desc    :   Train the selected model
 """
 
+import os
 import torch
 import argparse
 
@@ -30,6 +31,7 @@ parser.add_argument('--img_class', type=str, default='Radar',
 
 # global config
 setup_seed(729)
+os.environ["CUDA_VISIBLE_DEVICES"] = "0,1"
 torch.cuda.set_device(0)
 
 if __name__ == '__main__':
@@ -40,7 +42,8 @@ if __name__ == '__main__':
     gan_opt.parse(dict(
         gan_model=opt.model,
         img_class=opt.img_class,
-        vis=False
+        vis=False,
+        multi_gpu = False
     ))
 
     # lstm config
