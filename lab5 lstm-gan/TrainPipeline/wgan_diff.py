@@ -16,6 +16,7 @@ from tqdm import tqdm
 import torch
 import torch.autograd as autograd
 from torch.autograd import Variable
+from torch.utils.data import DataLoader
 from torchvision.utils import save_image
 
 from TrainPipeline.dataset import Weather_Dataset
@@ -73,7 +74,6 @@ def wgan_Diff(opt):
 
     # Initialize feature_extractor、generator and discriminator
     feature_extractor = FeatureExtractor(opt.img_size, opt.latent_dim)
-    # feature_extractor.load_state_dict(torch.load('checkpoints/dcgan/Radar/fe_20000.pth'))
     generator = wgan_generator(opt, [1, opt.img_size, opt.img_size])
     discriminator = wgan_disciminator([1, opt.img_size, opt.img_size])
 
@@ -95,7 +95,8 @@ def wgan_Diff(opt):
     datasets = Weather_Dataset(img_dir=opt.train_dataset_path + opt.img_class,
                                csv_path=opt.train_csv_path,
                                img_size=opt.img_size)
-    dataloader = iter(range(len(datasets)))
+    dataloader = DataLoader(datasets, batch_size=40, shuffle=True,
+                        num_workers=opt.num_workers, drop_last=True)
 
     # start visualization
     if opt.vis:
@@ -109,19 +110,15 @@ def wgan_Diff(opt):
     print('🚀 开始训练！')
 
     for epoch in range(opt.n_epochs):
-        with tqdm(total=len(datasets), bar_format=bar_format) as bar:
-            for i, imgs_index in enumerate(dataloader):
-            # i=0
-            # while i < 10000:
+        with tqdm(total=len(dataloader), bar_format=bar_format) as bar:
+            for i, imgs in enumerate(dataloader):
 
                 # display the first part of progress bar
                 bar.set_description(f"\33[36m🌌 Epoch {epoch:1d}")
                 
                 # input images
-                real_imgs = datasets[imgs_index][1:21]
-                base_imgs = datasets[imgs_index][0:20]
-                # real_imgs = datasets[19][1:21]
-                # base_imgs = datasets[19][0:20]
+                real_imgs = imgs[1:21]
+                base_imgs = imgs[0:20]
                 real_diff = (real_imgs - base_imgs).clamp(-1, 1)
 
                 # Configure input
@@ -175,16 +172,11 @@ def wgan_Diff(opt):
                     optimizer_G.step()
                     optimizer_fe.step()
 
-                    # display the last part of progress bar
-                    bar.set_postfix_str(
-                        f'D loss: {d_loss.item():.3f}, G loss: {g_loss.item():.3f}, Diff: {sum:.2f}\33[0m')
-                    bar.update()
-
                     # visualize the loss curve and generated images in visdom
                     if opt.vis and i % 50 == 0:
                         vis.plot(win='Loss', name='G loss', y=g_loss.item())
                         vis.plot(win='Loss', name='D loss', y=d_loss.item())
-                    if opt.vis:
+
                         base_imgs_ = denormalize(base_imgs.data[:1])
                         real_imgs_ = denormalize(real_imgs.data[:1])
                         fake_imgs_ = denormalize(fake_imgs.data[:1])
@@ -198,15 +190,24 @@ def wgan_Diff(opt):
 
                     # save the model and generated images every 500 batches
                     if i % opt.sample_interval == 0:
-                        fake_imgs_ = denormalize(fake_imgs.data[:9])
+                        real_imgs_ = denormalize(real_imgs.data[:9])/255.0
+                        fake_imgs_ = denormalize(fake_imgs.data[:9])/255.0
+                        save_image(real_imgs_, opt.result_dir + opt.img_class +
+                                   '/' + f"{epoch}_{i}_real.png", nrow=3, normalize=False)
                         save_image(fake_imgs_, opt.result_dir + opt.img_class +
-                                   '/' + f"{i}.png", nrow=3, normalize=False)
+                                   '/' + f"{epoch}_{i}_fake.png", nrow=3, normalize=False)
                         torch.save(feature_extractor.state_dict(),
-                                   opt.save_model_file + opt.img_class + '/' + f"fe_{i}.pth")
+                                   opt.save_model_file + opt.img_class + '/' + f"fe_{epoch}_{i}.pth")
                         torch.save(generator.state_dict(),
-                                   opt.save_model_file + opt.img_class + '/' + f'generator_{i}.pth')
+                                   opt.save_model_file + opt.img_class + '/' + f'generator_{epoch}_{i}.pth')
                         torch.save(discriminator.state_dict(),
-                                   opt.save_model_file + opt.img_class + '/' + f'discriminator_{i}.pth')
+                                   opt.save_model_file + opt.img_class + '/' + f'discriminator_{epoch}_{i}.pth')
+                
+                # display the last part of progress bar
+                bar.set_postfix_str(
+                    f'D loss: {d_loss.item():.3f}, G loss: {g_loss.item():.3f}, Diff: {sum:.2f}\33[0m')
+                bar.update()
+
 
 
 if __name__ == '__main__':

@@ -34,7 +34,7 @@ if __name__ == '__main__':
 
     # config
     train_opt = DefaultConfig()
-    train_opt.parse(dict(gan_model=opt.model, img_class=opt.img_class, vis=True))
+    train_opt.parse(dict(gan_model=opt.model, img_class=opt.img_class, vis=False))
 
     if opt.model == 'dcgan':
         dcgan_TrainPipeline(train_opt)
