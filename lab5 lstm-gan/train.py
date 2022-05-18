@@ -21,7 +21,8 @@ from TrainPipeline.dcgan_TrainPipeline import dcgan_TrainPipeline
 from TrainPipeline.wgan_TrainPipeline import wgan_TrainPipeline
 from TrainPipeline.dcgan_diff import dcgan_Diff
 from TrainPipeline.wgan_diff import wgan_Diff
-from TrainPipeline.lstm_TrainPipeline import lstm_TrainPipeline
+from TrainPipeline.lstm_dcgan_TrainPipeline import lstm_dc_TrainPipeline
+from TrainPipeline.lstm_w_TrainPipeline import lstm_w_TrainPipeline
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--model', type=str, default='dcgan',
@@ -57,5 +58,7 @@ if __name__ == '__main__':
         dcgan_Diff(gan_opt)
     elif opt.model == 'wgan_diff':
         wgan_Diff(gan_opt)
-    elif opt.model == 'lstm':
-        lstm_TrainPipeline(lstm_opt)
+    elif opt.model == 'lstm_w':
+        lstm_w_TrainPipeline(lstm_opt)
+    elif opt.model == 'lstm_dc':
+        lstm_dc_TrainPipeline(lstm_opt)
