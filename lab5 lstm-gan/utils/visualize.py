@@ -55,8 +55,8 @@ class Visualizer(object):
                 xlabel='x1',  # x轴标签
                 ylabel='y1',  # y轴标签
                 fillarea=False,  # 曲线下阴影覆盖
-                width=2350,  # 画布宽
-                height=700,  # 画布高
+                width=2000,  # 画布宽
+                height=300,  # 画布高
             ),
             update=None if x == 0 else 'append',
             **kwargs
@@ -73,7 +73,7 @@ class Visualizer(object):
         !!! don't ~~self.img('input_imgs', t.Tensor(100, 64, 64), nrows=10)~~ !!!
         """
         self.vis.images(img_.cpu().numpy(), win=name,
-                        opts=dict(title=name, width=650, height=650), **kwargs)
+                        opts=dict(title=name, width=350, height=350), **kwargs)
 
     def log(self, info, win='log_text'):
         """
