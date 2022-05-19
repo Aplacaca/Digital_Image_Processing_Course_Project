@@ -12,6 +12,7 @@
 
 import torch
 import torch.nn as nn
+import numpy as np
 
 
 def weights_init_normal(m):
@@ -36,11 +37,13 @@ class Generator(nn.Module):
 
         self.conv_blocks = nn.Sequential(
             nn.BatchNorm2d(128), 
-            nn.Upsample(scale_factor=2), # (40, 128, 128, 128)
+            nn.ConvTranspose2d(128, 128, 4, 2, padding=1, bias=False), # (40, 128, 128, 128)
+            # nn.Upsample(scale_factor=2), # (40, 128, 128, 128)
             nn.Conv2d(128, 128, 3, stride=1, padding=1),
             nn.BatchNorm2d(128, 0.8),
             nn.LeakyReLU(0.2, inplace=True),
-            nn.Upsample(scale_factor=2), # (40, 128, 256, 256)
+            nn.ConvTranspose2d(128, 128, 4, 2, padding=1, bias=False), # (40, 64, 256, 256)
+            # nn.Upsample(scale_factor=2), # (40, 128, 256, 256)
             nn.Conv2d(128, 64, 3, stride=1, padding=1), # (40, 64, 256, 256)
             nn.BatchNorm2d(64, 0.8),
             nn.LeakyReLU(0.2, inplace=True),
@@ -76,12 +79,13 @@ class Discriminator(nn.Module):
             *discriminator_block(16, 32), # (40, 32, 64, 64)
             *discriminator_block(32, 64), # (40, 64, 32, 32)
             *discriminator_block(64, 128), # (40, 128, 16, 16)
+            *discriminator_block(128, 256), # (40, 256, 8, 8)
         )
 
         # The height and width of downsampled image
-        ds_size = opt.img_size // 2 ** 4
+        ds_size = opt.img_size // 2 ** 5
         self.adv_layer = nn.Sequential(
-            nn.Linear(128 * ds_size ** 2, 1), nn.Sigmoid())
+            nn.Linear(256 * ds_size ** 2, 1), nn.Sigmoid())
 
         # Initialize weights
         self.apply(weights_init_normal)

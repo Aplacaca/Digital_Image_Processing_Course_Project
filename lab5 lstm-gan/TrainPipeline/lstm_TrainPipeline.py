@@ -6,7 +6,7 @@ from torch.autograd import Variable
 from torchvision.utils import save_image
 from torch.utils.data import DataLoader
 
-from TrainPipeline.dataset import Weather_Dataset
+from TrainPipeline.dataset import LSTM_Dataset
 from utils.visualize import Visualizer
 from utils.exception_handler import exception_handler
 from models.dcgan import Generator as dc_generator, Discriminator as dc_disciminator
@@ -78,15 +78,15 @@ def lstm_TrainPipeline(opt):
     Tensor = torch.cuda.FloatTensor if opt.use_gpu else torch.FloatTensor
 
     # Configure data loader
-    datasets1 = Weather_Dataset(img_dir=opt.train_dataset_path + 'Precip',
+    datasets1 = LSTM_Dataset(img_dir=opt.train_dataset_path + 'Precip',
                                 csv_path=opt.train_csv_path,
                                 img_size=opt.img_size)
     dataloader1 = iter(range(len(datasets1)))
-    datasets2 = Weather_Dataset(img_dir=opt.train_dataset_path + 'Radar',
+    datasets2 = LSTM_Dataset(img_dir=opt.train_dataset_path + 'Radar',
                                 csv_path=opt.train_csv_path,
                                 img_size=opt.img_size)
     dataloader2 = iter(range(len(datasets2)))
-    datasets3 = Weather_Dataset(img_dir=opt.train_dataset_path + 'Wind',
+    datasets3 = LSTM_Dataset(img_dir=opt.train_dataset_path + 'Wind',
                                 csv_path=opt.train_csv_path,
                                 img_size=opt.img_size)
     dataloader3 = iter(range(len(datasets3)))

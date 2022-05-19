@@ -16,17 +16,13 @@ from tqdm import tqdm
 import torch
 from torch.autograd import Variable
 from torch.utils.data import DataLoader
-from torchvision.utils import save_image
 
-from TrainPipeline.dataset import Weather_Dataset
+from TrainPipeline.dataset import GAN_Dataset
 from utils.visualize import Visualizer
 from utils.exception_handler import exception_handler
+from utils.log import denormalize, save_result_and_model
 from models.backbone import FeatureExtractor
 from models.dcgan import Generator as dc_generator, Discriminator as dc_disciminator
-
-
-def denormalize(imgs, mean=0.5, variance=0.5):
-    return imgs.mul(variance).add(mean) * 255.0
 
 
 @exception_handler
@@ -74,10 +70,8 @@ def dcgan_TrainPipeline(opt):
     Tensor = torch.cuda.FloatTensor if opt.use_gpu else torch.FloatTensor
 
     # Configure data loader
-    datasets = Weather_Dataset(img_dir=opt.train_dataset_path + opt.img_class,
-                               csv_path=opt.train_csv_path,
-                               img_size=opt.img_size)
-    dataloader = DataLoader(datasets, batch_size=40, shuffle=True,
+    datasets = GAN_Dataset(img_dir=opt.train_dataset_path + opt.img_class, img_size=opt.img_size)
+    dataloader = DataLoader(datasets, batch_size=40, shuffle=False,
                         num_workers=opt.num_workers, drop_last=True)
 
     # start visualization
@@ -91,9 +85,16 @@ def dcgan_TrainPipeline(opt):
     bar_format = '{desc}{n_fmt:>3s}/{total_fmt:<5s} |{bar}|{postfix}'
     print('🚀 开始训练！')
 
+    # img = None
     for epoch in range(opt.n_epochs):
         with tqdm(total=len(dataloader), bar_format=bar_format) as bar:
             for i, imgs in enumerate(dataloader):
+
+                # if img is None:
+                #     img = torch.cat((datasets[1000].unsqueeze(0), datasets[1000].unsqueeze(0)), dim=0)
+                #     imgs = img
+                # else:
+                #     imgs = img
 
                 # display the first part of progress bar
                 bar.set_description(f"\33[36m🌌 Epoch {epoch:1d}")
@@ -113,16 +114,16 @@ def dcgan_TrainPipeline(opt):
                 diff = [(z[i]-z[i+1]).detach().cpu().data for i in range(z.shape[0]-1)]
                 sum = np.array([diff[i].abs().sum() for i in range(len(diff))]).sum()
 
-                # -----------------
+                # Generate a batch of images
+                fake_imgs = generator(z)
+
+                # ---------------------------------------
                 #  Train Generator and Feature Extractor
-                # -----------------
+                # ---------------------------------------
 
                 if i % 5==0:
                     optimizer_G.zero_grad()
                     optimizer_fe.zero_grad()
-
-                    # Generate a batch of images
-                    fake_imgs = generator(z)
 
                     # Loss measures generator's ability to fool the discriminator
                     fake_validity = discriminator(fake_imgs)
@@ -153,7 +154,9 @@ def dcgan_TrainPipeline(opt):
                     f'D loss: {d_loss.item():.3f}, G loss: {g_loss.item():.3f}, diff: {sum:.2f}\33[0m')
                 bar.update()
 
-                # visualize the loss curve and generated images in visdom
+                # ----------
+                # visualize
+                # ----------
                 if opt.vis and i % 50 == 0:
                     vis.plot(win='Loss', name='G loss', y=g_loss.item())
                     vis.plot(win='Loss', name='D loss', y=d_loss.item())
@@ -163,21 +166,11 @@ def dcgan_TrainPipeline(opt):
                     vis.img(name='Real', img_=imgs_, nrow=1)
                     vis.img(name='Fake', img_=fake_imgs_, nrow=1)
 
-                # save the model and generated images every 500 batches
-                if i % opt.sample_interval == 0:
-                    real_imgs_ = denormalize(real_imgs.data[:9])/255.0
-                    fake_imgs_ = denormalize(fake_imgs.data[:9])/255.0
-                    save_image(real_imgs_, opt.result_dir + opt.img_class +
-                               '/' + f"{epoch}_{i}_real.png", nrow=3, normalize=False)
-                    save_image(fake_imgs_, opt.result_dir + opt.img_class +
-                               '/' + f"{epoch}_{i}_fake.png", nrow=3, normalize=False)
-                    torch.save(feature_extractor.state_dict(),
-                               opt.save_model_file + opt.img_class + '/' + f"fe_{epoch}_{i}.pth")
-                    torch.save(generator.state_dict(),
-                               opt.save_model_file + opt.img_class + '/' + f'generator_{epoch}_{i}.pth')
-                    torch.save(discriminator.state_dict(),
-                               opt.save_model_file + opt.img_class + '/' + f'discriminator_{epoch}_{i}.pth')
-
+        # save the model and generated images every 5 epochs
+        if epoch % 5 == 0:
+            real_imgs = torch.cat(tuple((datasets[i].unsqueeze(0) for i in np.random.choice(datasets.__len__(), size=9, replace=False))), dim=0)
+            real_imgs = Variable(real_imgs.type(Tensor))
+            save_result_and_model(epoch, 50, opt, real_imgs, feature_extractor, generator, discriminator)
 
 if __name__ == '__main__':
     dcgan_TrainPipeline()
