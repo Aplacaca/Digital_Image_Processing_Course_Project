@@ -73,9 +73,9 @@ class FeatureExtractor(nn.Module):
     vgg16_model: nn.ModuleList
         vgg16 模型
     """
-    #输入为 (40, 1, 256, 256)，vgg提取后变化为 (N, 32, 16, 16)
+    #输入为 (40, 1, 256, 256)，vgg提取后变化为 (N, 128, 16, 16)
     cfg = [16, 16, 'M', 32, 32, 'M', 64, 64,
-           64, 'C', 32, 32, 32, 'M']
+           64, 'C', 128, 128, 128, 'M']
 
     def __init__(self, img_size, latent_dim):
         super(FeatureExtractor, self).__init__()
@@ -83,9 +83,11 @@ class FeatureExtractor(nn.Module):
 
         num_pool = sum([x.__class__.__name__ == 'MaxPool2d' for x in self.features]) # vgg16中的池化层的数量
         self.fc = nn.Sequential(
-            nn.Linear(int(32 * (img_size/2**num_pool)**2), 1024),
+            nn.Linear(int(128 * (img_size/2**num_pool)**2), 4096),
             nn.ReLU(True),
-            nn.Linear(1024, latent_dim),
+            nn.Linear(4096, 512),
+            nn.ReLU(True),
+            nn.Linear(512, latent_dim),
             nn.Tanh()
         )
         

@@ -7,7 +7,7 @@ from torch.autograd import Variable
 from torchvision.utils import save_image
 from torch.utils.data import DataLoader
 
-from TrainPipeline.dataset import Weather_Dataset
+from TrainPipeline.dataset import LSTM_Dataset
 from utils.visualize import Visualizer
 from utils.exception_handler import exception_handler
 # from models.dcgan import Generator, Discriminator
@@ -27,17 +27,20 @@ def recover_img(imgs, img_class='radar'):
 
     return imgs
 
+
 def compute_gradient_penalty(D, real_samples, fake_samples, Tensor):
     """Calculates the gradient penalty loss for WGAN GP"""
-    
+
     # Random weight term for interpolation between real and fake samples
     alpha = Tensor(np.random.random((real_samples.size(0), 1, 1, 1)))
-    
+
     # Get random interpolation between real and fake samples
-    interpolates = (alpha * real_samples + ((1 - alpha) * fake_samples)).requires_grad_(True)
+    interpolates = (alpha * real_samples + ((1 - alpha)
+                    * fake_samples)).requires_grad_(True)
     d_interpolates = D(interpolates)
-    fake = Variable(Tensor(real_samples.shape[0], 1).fill_(1.0), requires_grad=False)
-    
+    fake = Variable(Tensor(real_samples.shape[0], 1).fill_(
+        1.0), requires_grad=False)
+
     # Get gradient w.r.t. interpolates
     gradients = autograd.grad(
         outputs=d_interpolates,
@@ -49,7 +52,7 @@ def compute_gradient_penalty(D, real_samples, fake_samples, Tensor):
     )[0]
     gradients = gradients.view(gradients.size(0), -1)
     gradient_penalty = ((gradients.norm(2, dim=1) - 1) ** 2).mean()
-    
+
     return gradient_penalty
 
 
@@ -69,7 +72,7 @@ def lstm_TrainPipeline(opt):
     discriminator = Discriminator([1, opt.img_size, opt.img_size])
     feature_extractor.load_state_dict(torch.load(
         "./checkpoints/wgan/Radar/fe_9_23000.pth"))
-    generator.load_state_dict(torch.load(\
+    generator.load_state_dict(torch.load(
         "./checkpoints/wgan/Radar/generator_9_23000.pth"))
     discriminator.load_state_dict(torch.load(
         "./checkpoints/wgan/Radar/discriminator_9_23000.pth"))
@@ -104,18 +107,17 @@ def lstm_TrainPipeline(opt):
     Tensor = torch.cuda.FloatTensor if opt.use_gpu else torch.FloatTensor
 
     # Configure data loader
-    datasets1 = Weather_Dataset(img_dir=opt.train_dataset_path + 'Precip',
-                                csv_path=opt.train_csv_path,
-                                img_size=opt.img_size)
+    datasets1 = LSTM_Dataset(img_dir=opt.train_dataset_path + 'Precip',
+                             csv_path=opt.train_csv_path,
+                             img_size=opt.img_size)
     dataloader1 = iter(range(len(datasets1)))
-    datasets2 = Weather_Dataset(img_dir=opt.train_dataset_path + 'Radar',
-                                csv_path=opt.train_csv_path,
-                                img_size=opt.img_size)
-    dataloader2 = DataLoader(datasets2, batch_size=40, shuffle=False,
-                        num_workers=opt.num_workers, drop_last=True)
-    datasets3 = Weather_Dataset(img_dir=opt.train_dataset_path + 'Wind',
-                                csv_path=opt.train_csv_path,
-                                img_size=opt.img_size)
+    datasets2 = LSTM_Dataset(img_dir=opt.train_dataset_path + 'Radar',
+                             csv_path=opt.train_csv_path,
+                             img_size=opt.img_size)
+    dataloader2 = iter(range(len(datasets2)))
+    datasets3 = LSTM_Dataset(img_dir=opt.train_dataset_path + 'Wind',
+                             csv_path=opt.train_csv_path,
+                             img_size=opt.img_size)
     dataloader3 = iter(range(len(datasets3)))
     # dataloader = DataLoader(datasets,batch_size = 16, shuffle=False)
     # start visualization
@@ -140,7 +142,7 @@ def lstm_TrainPipeline(opt):
                     Tensor), requires_grad=False)
 
                 # Configure input
-                pred_in = Variable(imgs[0:20,:, :].type(Tensor))
+                pred_in = Variable(imgs[0:20, :, :].type(Tensor))
 
                 # Adversarial ground truths
                 valid = Variable(Tensor(pred_in.shape[0], 1).fill_(
@@ -151,13 +153,13 @@ def lstm_TrainPipeline(opt):
                 # Configure input
 
                 # ---------------------
-                #  Train Discriminator 
+                #  Train Discriminator
                 # ---------------------
 
                 optimizer_D.zero_grad()
 
                 # -----------------
-                #  Train predictor 
+                #  Train predictor
                 # -----------------
 
                 fe_out = feature_extractor(pred_in).unsqueeze(0)
@@ -165,32 +167,32 @@ def lstm_TrainPipeline(opt):
                 fe_pred_out, _ = predictor(fe_out)
                 fe_pred_out = fe_pred_out.squeeze(dim=0)
 
-                pred_out = generator(fe_pred_out)  
-                
+                pred_out = generator(fe_pred_out)
+
                 # Real images
                 real_validity = discriminator(pred_gt)
                 # Fake images
                 fake_validity = discriminator(pred_out.detach())
                 # Gradient penalty
-                gradient_penalty = compute_gradient_penalty\
-                    (discriminator, pred_gt.data, pred_out.detach().data, Tensor)
-                
+                gradient_penalty = compute_gradient_penalty(
+                    discriminator, pred_gt.data, pred_out.detach().data, Tensor)
+
                 d_loss = -torch.mean(real_validity) + \
                     torch.mean(fake_validity) + lambda_gp * gradient_penalty
-                    
+
                 d_loss.backward()
                 optimizer_D.step()
-                
+
                 # -----------------
                 #  Train Generator and Feature Extractor predictor every n_critic steps
                 # -----------------
                 optimizer_G.zero_grad()
                 optimizer_fe.zero_grad()
                 optimizer_P.zero_grad()
-                
+
                 if i % opt.n_critic == 0:
-                # Loss measures generator's ability to fool the discriminator
-                    
+                    # Loss measures generator's ability to fool the discriminator
+
                     fake_validity = discriminator(pred_out)
                     g_loss = -torch.mean(fake_validity)
                     g_loss.backward(retain_graph=True)

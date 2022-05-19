@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ChangeListManager">
+    <list default="true" id="1d0cc52e-4668-4dd5-be93-fe002d03b9ca" name="Changes" comment="">
+      <change afterPath="$PROJECT_DIR$/lab5 lstm-gan/gan_test.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/lab5 lstm-gan/models/Infogan.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/lab5 lstm-gan/utils/log.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/lab5 lstm-gan/README.md" beforeDir="false" afterPath="$PROJECT_DIR$/lab5 lstm-gan/README.md" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/lab5 lstm-gan/TrainPipeline/dataset.py" beforeDir="false" afterPath="$PROJECT_DIR$/lab5 lstm-gan/TrainPipeline/dataset.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/lab5 lstm-gan/TrainPipeline/dcgan_TrainPipeline.py" beforeDir="false" afterPath="$PROJECT_DIR$/lab5 lstm-gan/TrainPipeline/dcgan_TrainPipeline.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/lab5 lstm-gan/TrainPipeline/dcgan_diff.py" beforeDir="false" afterPath="$PROJECT_DIR$/lab5 lstm-gan/TrainPipeline/dcgan_diff.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/lab5 lstm-gan/TrainPipeline/infogan_TrainPipeline.py" beforeDir="false" afterPath="$PROJECT_DIR$/lab5 lstm-gan/TrainPipeline/infogan_TrainPipeline.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/lab5 lstm-gan/TrainPipeline/lstm_TrainPipeline.py" beforeDir="false" afterPath="$PROJECT_DIR$/lab5 lstm-gan/TrainPipeline/lstm_TrainPipeline.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/lab5 lstm-gan/TrainPipeline/wgan_TrainPipeline.py" beforeDir="false" afterPath="$PROJECT_DIR$/lab5 lstm-gan/TrainPipeline/wgan_TrainPipeline.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/lab5 lstm-gan/TrainPipeline/wgan_diff.py" beforeDir="false" afterPath="$PROJECT_DIR$/lab5 lstm-gan/TrainPipeline/wgan_diff.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/lab5 lstm-gan/config.py" beforeDir="false" afterPath="$PROJECT_DIR$/lab5 lstm-gan/config.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/lab5 lstm-gan/models/backbone.py" beforeDir="false" afterPath="$PROJECT_DIR$/lab5 lstm-gan/models/backbone.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/lab5 lstm-gan/models/dcgan.py" beforeDir="false" afterPath="$PROJECT_DIR$/lab5 lstm-gan/models/dcgan.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/lab5 lstm-gan/models/wgan_gp.py" beforeDir="false" afterPath="$PROJECT_DIR$/lab5 lstm-gan/models/wgan_gp.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/lab5 lstm-gan/train.py" beforeDir="false" afterPath="$PROJECT_DIR$/lab5 lstm-gan/train.py" afterDir="false" />
+    </list>
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="Git.Settings">
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+  </component>
+  <component name="MarkdownSettingsMigration">
+    <option name="stateVersion" value="1" />
+  </component>
+  <component name="ProjectId" id="29MX2ppCm15szaIr20WdBqd017P" />
+  <component name="ProjectLevelVcsManager" settingsEditedManually="true" />
+  <component name="ProjectViewState">
+    <option name="hideEmptyMiddlePackages" value="true" />
+    <option name="showLibraryContents" value="true" />
+  </component>
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "RunOnceActivity.OpenProjectViewOnStart": "true",
+    "RunOnceActivity.ShowReadmeOnStart": "true"
+  }
+}]]></component>
+  <component name="SpellCheckerSettings" RuntimeDictionaries="0" Folders="0" CustomDictionaries="0" DefaultDictionary="application-level" UseSingleDictionary="true" transferred="true" />
+  <component name="TaskManager">
+    <task active="true" id="Default" summary="Default task">
+      <changelist id="1d0cc52e-4668-4dd5-be93-fe002d03b9ca" name="Changes" comment="" />
+      <created>1652923725827</created>
+      <option name="number" value="Default" />
+      <option name="presentableId" value="Default" />
+      <updated>1652923725827</updated>
+    </task>
+    <servers />
+  </component>
+  <component name="Vcs.Log.Tabs.Properties">
+    <option name="TAB_STATES">
+      <map>
+        <entry key="MAIN">
+          <value>
+            <State />
+          </value>
+        </entry>
+      </map>
+    </option>
+  </component>
+</project>

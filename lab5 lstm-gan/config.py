@@ -32,7 +32,7 @@ class DefaultConfig(object):
     img_size = 256  # size of each image dimension
 
     # 训练参数
-    n_epochs = 1  # max epochs
+    n_epochs = 300  # max epochs
     n_critic = 5  # number of training steps for wgan_gp discriminator per iter
     batch_size = 40 # DO NOT CHANGE!
     lr_fe = 1e-4  # feature_extractor learning rate
@@ -49,9 +49,9 @@ class DefaultConfig(object):
     seed = 729  # random seed
     use_gpu = True  # use GPU
     multi_gpu = False
-    device = 'cuda' if torch.cuda.is_available() else 'cpu'  # available device
+    device = 'cuda' if torch.cuda.is_available() and use_gpu else 'cpu'  # available device
     num_workers = 8  # how many workers for loading data
-    sample_interval = 50  # print info every N batch
+    sample_interval = 1000  # print info every N batch
 
     def parse(self, kwargs):
         """
@@ -65,6 +65,7 @@ class DefaultConfig(object):
         self.save_model_file = 'checkpoints/' + \
             self.gan_model + '/'  # weights file path
         self.result_dir = 'images_' + self.gan_model + '/'  # result image path
+        self.device = 'cuda' if torch.cuda.is_available() and self.use_gpu else 'cpu'  # available device
 
         # 打印配置信息
         print('user config:')
