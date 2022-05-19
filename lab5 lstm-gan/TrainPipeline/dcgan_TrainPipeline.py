@@ -27,6 +27,7 @@ from models.dcgan import Generator as dc_generator, Discriminator as dc_discimin
 
 @exception_handler
 def dcgan_TrainPipeline(opt):
+    """DCGAN Train Pipeline"""
 
     print('DCGAN! 🎉🎉🎉')
 
@@ -74,7 +75,7 @@ def dcgan_TrainPipeline(opt):
     dataloader = DataLoader(datasets, batch_size=40, shuffle=False,
                         num_workers=opt.num_workers, drop_last=True)
 
-    # start visualization
+    # Start visualization
     if opt.vis:
         vis = Visualizer(opt.vis_env)
 
@@ -95,6 +96,10 @@ def dcgan_TrainPipeline(opt):
                 #     imgs = img
                 # else:
                 #     imgs = img
+
+                # -----------
+                # Preprocess
+                # -----------
 
                 # display the first part of progress bar
                 bar.set_description(f"\33[36m🌌 Epoch {epoch:1d}")
@@ -155,7 +160,7 @@ def dcgan_TrainPipeline(opt):
                 bar.update()
 
                 # ----------
-                # visualize
+                # Visualize
                 # ----------
                 if opt.vis and i % 50 == 0:
                     vis.plot(win='Loss', name='G loss', y=g_loss.item())

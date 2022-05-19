@@ -39,12 +39,17 @@ if __name__ == '__main__':
     gan_opt.parse(dict(
         gan_model=opt.model,
         img_class=opt.img_class,
-        vis=False,
+        vis=True,
         multi_gpu = False
     ))
 
     # lstm config
     lstm_opt = TSConfig()
+    lstm_opt.parse(dict(
+        img_class=opt.img_class,
+        vis=True,
+        multi_gpu = False
+    ))
 
     if opt.model == 'dcgan':
         from TrainPipeline.dcgan_TrainPipeline import dcgan_TrainPipeline
@@ -63,4 +68,9 @@ if __name__ == '__main__':
         wgan_Diff(gan_opt)
     elif opt.model == 'lstm':
         from TrainPipeline.lstm_TrainPipeline import lstm_TrainPipeline
-        lstm_TrainPipeline(lstm_opt)
+        g_path = 'best/dcgan_radar_generator_90.pth'
+        fe_path = 'best/dcgan_radar_fe_90.pth'
+        lstm_TrainPipeline(lstm_opt, g_path, fe_path)
+    elif opt.model == 'lstmgan':
+        from TrainPipeline.lstmgan_TrainPipeline import lstmgan_TrainPipeline
+        lstmgan_TrainPipeline(lstm_opt)
