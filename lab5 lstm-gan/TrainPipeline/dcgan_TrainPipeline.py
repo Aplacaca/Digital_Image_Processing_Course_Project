@@ -17,7 +17,7 @@ import torch
 from torch.autograd import Variable
 from torch.utils.data import DataLoader
 
-from TrainPipeline.dataset import GAN_Dataset
+from TrainPipeline.dataset import Weather_Dataset
 from utils.visualize import Visualizer
 from utils.exception_handler import exception_handler
 from utils.log import denormalize, save_result_and_model
@@ -46,11 +46,11 @@ def dcgan_TrainPipeline(opt):
     discriminator = dc_disciminator(opt)
 
     # Load model
-    # feature_extractor.load_state_dict(torch.load('checkpoints/dcgan/Radar/fe_7_0.pth'))
-    # generator.load_state_dict(torch.load('checkpoints/dcgan/Radar/generator_7_0.pth'))
-    # discriminator.load_state_dict(torch.load('checkpoints/dcgan/Radar/discriminator_7_0.pth'))
+    # feature_extractor.load_state_dict(torch.load('checkpoints/dcgan/Radar/fe_55.pth'))
+    # generator.load_state_dict(torch.load('checkpoints/dcgan/Radar/generator_55.pth'))
+    # discriminator.load_state_dict(torch.load('checkpoints/dcgan/Radar/discriminator_55.pth'))
 
-    # device
+    # Device
     if opt.multi_gpu:
         feature_extractor = torch.nn.DataParallel(feature_extractor)
         generator = torch.nn.DataParallel(generator)
@@ -71,7 +71,7 @@ def dcgan_TrainPipeline(opt):
     Tensor = torch.cuda.FloatTensor if opt.use_gpu else torch.FloatTensor
 
     # Configure data loader
-    datasets = GAN_Dataset(img_dir=opt.train_dataset_path + opt.img_class, img_size=opt.img_size)
+    datasets = Weather_Dataset(img_dir=opt.train_dataset_path + opt.img_class, csv_path=opt.train_csv_path, img_size=opt.img_size, img_num=40*5000)
     dataloader = DataLoader(datasets, batch_size=40, shuffle=False,
                         num_workers=opt.num_workers, drop_last=True)
 
@@ -126,17 +126,18 @@ def dcgan_TrainPipeline(opt):
                 #  Train Generator and Feature Extractor
                 # ---------------------------------------
 
-                if i % 5==0:
-                    optimizer_G.zero_grad()
-                    optimizer_fe.zero_grad()
-
-                    # Loss measures generator's ability to fool the discriminator
-                    fake_validity = discriminator(fake_imgs)
-                    g_loss = adversarial_loss(fake_validity, valid)
-                    g_loss.backward()
-                    
-                    optimizer_G.step()
-                    optimizer_fe.step()
+                optimizer_G.zero_grad()
+                optimizer_fe.zero_grad()
+                
+                # Loss measures generator's ability to fool the discriminator
+                fake_validity = discriminator(fake_imgs)
+                g_loss = adversarial_loss(fake_validity, valid)
+                if opt.multi_gpu:
+                    g_loss = g_loss.mean()
+                g_loss.backward()
+                
+                optimizer_G.step()
+                optimizer_fe.step()
 
                 # ---------------------
                 #  Train Discriminator
@@ -150,6 +151,8 @@ def dcgan_TrainPipeline(opt):
                 real_loss = adversarial_loss(real_validity, valid)
                 fake_loss = adversarial_loss(fake_validity, fake)
                 d_loss = (real_loss + fake_loss) / 2
+                if opt.multi_gpu:
+                    d_loss = d_loss.mean()
 
                 d_loss.backward()
                 optimizer_D.step()

@@ -107,7 +107,7 @@ class ParseCSV:
         return data_list
 
 
-class LSTM_Dataset(Dataset):
+class Weather_Dataset(Dataset):
 
     def __init__(self, img_dir, csv_path, img_size, img_num=None):
         """
@@ -162,27 +162,25 @@ class LSTM_Dataset(Dataset):
     def __len__(self):
         return self.img_num
 
-class GAN_Dataset(Dataset):
+class TEST_Dataset(Dataset):
 
-    def __init__(self, img_dir, img_size, img_num=None):
+    def __init__(self, img_dir, img_size):
         """
                 
         Parameters:
         ------- 
         img_dir: str
-            图片所在的文件夹路径
+            测试集文件夹路径
         img_size: int
             图片的大小
-        img_num: int
-            图片的数量，如果不指定，则自动读取文件夹中所有图片
         """
         
-        self.img_dir = img_dir
         self.img_size = img_size
+        self.type = img_dir.split('/')[-1].lower()
         
-        imgs = os.listdir(img_dir+'/')
-        self.imgs_path = [os.path.join(img_dir, img) for img in imgs]
-        self.img_num = img_num if img_num is not None else len(self.imgs_path)
+        sub_folders = os.listdir(img_dir+'/')
+        self.imgs_dirs = [os.path.join(img_dir, sub_folder) for sub_folder in sub_folders]
+        self.img_num = 20* len(sub_folders)
         
         self.transform = transforms.Compose([
             transforms.Resize((self.img_size, self.img_size)),
@@ -196,32 +194,26 @@ class GAN_Dataset(Dataset):
         Returns:
         ------- 
         img: Tensor
-            按照csv中顺序读取索引为index的图片，形状为(1, img_size, img_size)
+            返回每个子文件夹下的20张图片，形状为(1, img_size, img_size)
         """
 
-        img_path = self.imgs_path[index]
+        img_paths = [os.path.join(self.imgs_dirs[index], f'{self.type}_{img_id:03d}.png') for img_id in range(1, 21)]
 
         # read images
         try:
-            img = Image.open(img_path)
+            imgs = [Image.open(img_path) for img_path in img_paths]
         except:
-            print(img_path)
-            raise Exception('Error: cannot open image')
+            raise Exception('Error: cannot open images')
 
         # process images
-        img = self.transform(img)
+        result = [self.transform(img).unsqueeze(0) for img in imgs]
 
-        return img
+        return torch.cat(result, dim=0)
 
     def __len__(self):
         return self.img_num
 
 
 if __name__ == '__main__':
-    dataset = GAN_Dataset(img_dir='data/Train/Radar', img_size=256)
-    
-    dataloader = DataLoader(dataset, batch_size=40, shuffle=True,
-                        num_workers=4, drop_last=True)
-
-    for i, data in enumerate(dataloader):
-        print(data.shape)
+    dataset = TEST_Dataset(img_dir='data/TestB1/Radar', img_size=256)
+    print(dataset[0])

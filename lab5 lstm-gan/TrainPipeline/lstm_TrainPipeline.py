@@ -17,7 +17,7 @@ from torch.autograd import Variable
 from torchvision.utils import save_image
 from torch.utils.data import DataLoader
 
-from TrainPipeline.dataset import LSTM_Dataset
+from TrainPipeline.dataset import Weather_Dataset
 from utils.visualize import Visualizer
 from utils.exception_handler import exception_handler
 from models.dcgan import Generator as dc_generator
@@ -53,8 +53,8 @@ def lstm_TrainPipeline(opt, g_path, fe_path):
     generator = dc_generator(opt)
     
     # Load model
-    feature_extractor.load_state_dict(torch.load(fe_path))
-    generator.load_state_dict(torch.load(g_path))
+    feature_extractor.load_state_dict(torch.load(fe_path, map_location=opt.device))
+    generator.load_state_dict(torch.load(g_path, map_location=opt.device))
 
     # Initialize predictor
     predictor = torch.nn.LSTM(input_size=100, hidden_size=100, batch_first=True, num_layers=5)
@@ -76,11 +76,11 @@ def lstm_TrainPipeline(opt, g_path, fe_path):
     Tensor = torch.cuda.FloatTensor if opt.use_gpu else torch.FloatTensor
 
     # Configure data loader
-    datasets1 = LSTM_Dataset(img_dir=opt.train_dataset_path + 'Precip', csv_path=opt.train_csv_path, img_size=opt.img_size)
+    datasets1 = Weather_Dataset(img_dir=opt.train_dataset_path + 'Precip', csv_path=opt.train_csv_path, img_size=opt.img_size)
     dataloader1 = DataLoader(datasets1, batch_size=opt.batch_size, shuffle=False, num_workers=0)
-    datasets2 = LSTM_Dataset(img_dir=opt.train_dataset_path + 'Radar', csv_path=opt.train_csv_path, img_size=opt.img_size)
+    datasets2 = Weather_Dataset(img_dir=opt.train_dataset_path + 'Radar', csv_path=opt.train_csv_path, img_size=opt.img_size)
     dataloader2 = DataLoader(datasets2, batch_size=opt.batch_size, shuffle=False, num_workers=0)
-    datasets3 = LSTM_Dataset(img_dir=opt.train_dataset_path + 'Wind', csv_path=opt.train_csv_path, img_size=opt.img_size)
+    datasets3 = Weather_Dataset(img_dir=opt.train_dataset_path + 'Wind', csv_path=opt.train_csv_path, img_size=opt.img_size)
     dataloader3 = DataLoader(datasets3, batch_size=opt.batch_size, shuffle=False, num_workers=0)
     
     # Start visualization
@@ -152,7 +152,7 @@ def lstm_TrainPipeline(opt, g_path, fe_path):
                     with torch.no_grad():
                         gen_future_imgs = generator(future_features)
                         gen_pred_imgs = generator(pred_features)
-                    gen_pred_img = denormalize(gen_pred_img.data[:9])/255.0
+                    gen_pred_img = denormalize(gen_pred_imgs.data[:9])/255.0
                     gen_future_imgs = denormalize(gen_future_imgs.data[:9])/255.0
                     imgs_ = denormalize(imgs2.data[:9])/255.0
                     save_image(gen_pred_img, opt.result_dir + opt.img_class + '/' + f"pred_{epoch}_{i}.png", nrow=3, normalize=False)
