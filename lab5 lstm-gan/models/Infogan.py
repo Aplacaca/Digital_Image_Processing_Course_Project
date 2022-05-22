@@ -29,9 +29,9 @@ class Generator(nn.Module):
 	def __init__(self):
 		super().__init__()
 
-		# input shape (batch_size, 100+10*10+2, 1, 1)
+		# input shape (batch_size, 100+100, 1, 1)
 
-		self.tconv1 = nn.ConvTranspose2d(100+10*10+2, 512, 2, 1, bias=False) # shape (batch_size, 448, 2, 2)
+		self.tconv1 = nn.ConvTranspose2d(100+100, 512, 2, 1, bias=False) # shape (batch_size, 512, 2, 2)
 		self.bn1 = nn.BatchNorm2d(512)
 		self.tconv2 = nn.ConvTranspose2d(512, 256, 4, 2, padding=1, bias=False) # shape (batch_size, 256, 4, 4)
 		self.bn2 = nn.BatchNorm2d(256)
@@ -104,6 +104,7 @@ class DHead(nn.Module):
 		self.apply(weights_init)
 
 	def forward(self, x):
+		
 		output = torch.sigmoid(self.conv(x))
 
 		return output.view(-1)

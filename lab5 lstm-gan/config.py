@@ -32,7 +32,7 @@ class DefaultConfig(object):
     img_size = 256  # size of each image dimension
 
     # 训练参数
-    n_epochs = 300  # max epochs
+    n_epochs = 200  # max epochs
     n_critic = 5  # number of training steps for wgan_gp discriminator per iter
     batch_size = 40 # DO NOT CHANGE!
     lr_fe = 1e-4  # feature_extractor learning rate
@@ -67,12 +67,12 @@ class DefaultConfig(object):
         self.result_dir = 'images_' + self.gan_model + '/'  # result image path
         self.device = 'cuda' if torch.cuda.is_available() and self.use_gpu else 'cpu'  # available device
 
-        # 打印配置信息
-        print('user config:')
-        for k, v in self.__class__.__dict__.items():
-            if not k.startswith('__'):
-                print(k, getattr(self, k))
-        print()
+        # # 打印配置信息
+        # print('user config:')
+        # for k, v in self.__class__.__dict__.items():
+        #     if not k.startswith('__'):
+        #         print(k, getattr(self, k))
+        # print()
 
 
 class TSConfig(object):
@@ -82,37 +82,34 @@ class TSConfig(object):
 
     # 文件路径
     img_class = 'Radar'
-    train_csv_path = '/home/lrk/lab5/data/Train.csv'  # csv file path
-    train_dataset_path = '/home/lrk/lab5/data/Train/'  # image file path
+    train_csv_path = 'data/Train.csv'  # csv file path
+    train_dataset_path = 'data/Train/'  # image file path
     load_model_path = None  # 加载预训练的模型的路径，为None代表不加载
-    save_model_file = 'checkpoints/'  # weights file path
+    save_model_file = 'checkpoints/' + ts_model + '/'  # weights file path
     result_dir = 'images_' + ts_model + '/'  # result image path
 
     # 图片参数
     channels = 1  # number of image channels
     img_size = 256  # size of each image dimension
-    
+
     # 训练参数
-    n_epochs = 1  # max epochs
-    n_critic = 5  # number of training steps for wgan_gp discriminator per iter
+    n_epochs = 5
     batch_size = 40 # DO NOT CHANGE!
-    lr = 1e-4  # feature_extractor learning rate
-    lr_g = 1e-4  # generator learning rate
-    lr_d = 1e-4  # discriminator learning rate
+    lr = 1e-3  # initial learning rate
     latent_dim = 100  # dimensionality of the latent space
-    code_dim = 2 # latent code for InfoGAN
     b1 = 0.5  # adam: decay of first order momentum of gradient
     b2 = 0.999  # adam: decay of first order momentum of gradient
 
     # 其他参数
     vis = True  # use visdom
-    vis_env = 'LSTM-GAN'   # visdom env
+    vis_env = 'LSTM_GAN'   # visdom env
     seed = 729  # random seed
-    use_gpu = False  # use GPU
+    use_gpu = True  # use GPU
     multi_gpu = False
-    device = 'cpu'#'cuda' if torch.cuda.is_available() else 'cpu'  # available device
-    num_workers = 8  # how many workers for loading data
-    sample_interval = 50  # print info every N batch
+    device = 'cuda' if torch.cuda.is_available() and use_gpu else 'cpu'  # available device
+    # device = "cpu"
+    num_workers = 1  # how many workers for loading data
+    sample_interval = 100  # print info every N batch
 
     def parse(self, kwargs):
         """
@@ -123,9 +120,12 @@ class TSConfig(object):
                 warnings.warn("Warning: opt has not attribut %s" % k)
             setattr(self, k, v)
 
-        # 打印配置信息
-        print('user config:')
-        for k, v in self.__class__.__dict__.items():
-            if not k.startswith('__'):
-                print(k, getattr(self, k))
-        print()
+        self.result_dir = 'images_' + self.ts_model + '/'  # result image path
+        self.device = 'cuda' if torch.cuda.is_available() and self.use_gpu else 'cpu'  # available device
+
+        # # 打印配置信息
+        # print('user config:')
+        # for k, v in self.__class__.__dict__.items():
+        #     if not k.startswith('__'):
+        #         print(k, getattr(self, k))
+        # print()

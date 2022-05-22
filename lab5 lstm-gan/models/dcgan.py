@@ -96,3 +96,39 @@ class Discriminator(nn.Module):
         validity = self.adv_layer(out)
 
         return validity
+
+class Simple_Discriminator(nn.Module):
+    def __init__(self, opt):
+        super(Simple_Discriminator, self).__init__()
+
+        # images of one batch: (40, 1, 256, 256)
+
+        def discriminator_block(in_filters, out_filters, bn=True):
+            block = [nn.Conv2d(in_filters, out_filters, 3, 2, 1), nn.LeakyReLU(
+                0.2, inplace=True), nn.Dropout2d(0.25)]
+            if bn:
+                block.append(nn.BatchNorm2d(out_filters, 0.8))
+            return block
+
+        self.model = nn.Sequential(
+            *discriminator_block(opt.channels, 16, bn=False), # (40, 16, 128, 128)
+            *discriminator_block(16, 32), # (40, 32, 64, 64)
+            *discriminator_block(32, 64), # (40, 64, 32, 32)
+            *discriminator_block(64, 128), # (40, 128, 16, 16)
+            # *discriminator_block(128, 256), # (40, 256, 8, 8)
+        )
+
+        # The height and width of downsampled image
+        ds_size = opt.img_size // 2 ** 4
+        self.adv_layer = nn.Sequential(
+            nn.Linear(128 * ds_size ** 2, 1), nn.Sigmoid())
+
+        # Initialize weights
+        self.apply(weights_init_normal)
+
+    def forward(self, img):
+        out = self.model(img)
+        out = out.view(out.shape[0], -1)
+        validity = self.adv_layer(out)
+
+        return validity

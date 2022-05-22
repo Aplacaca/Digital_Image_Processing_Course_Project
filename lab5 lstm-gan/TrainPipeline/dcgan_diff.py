@@ -17,7 +17,7 @@ import torch
 from torch.autograd import Variable
 from torch.utils.data import DataLoader
 
-from TrainPipeline.dataset import GAN_Dataset
+from TrainPipeline.dataset import Weather_Dataset
 from utils.visualize import Visualizer
 from utils.exception_handler import exception_handler
 from utils.log import denormalize, save_result_and_model
@@ -64,7 +64,7 @@ def dcgan_Diff(opt):
     Tensor = torch.cuda.FloatTensor if opt.use_gpu else torch.FloatTensor
 
     # Configure data loader
-    datasets = GAN_Dataset(img_dir=opt.train_dataset_path + opt.img_class, img_size=opt.img_size)
+    datasets = Weather_Dataset(img_dir=opt.train_dataset_path + opt.img_class, img_size=opt.img_size)
     dataloader = DataLoader(datasets, batch_size=40, shuffle=True,
                         num_workers=opt.num_workers, drop_last=True)
 

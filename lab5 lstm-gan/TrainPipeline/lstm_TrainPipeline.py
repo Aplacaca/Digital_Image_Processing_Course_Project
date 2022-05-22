@@ -1,63 +1,44 @@
+# !/usr/bin/python
+# -*- coding: utf-8 -*-
+"""
+@File    :   lstm_TrainPipeline.py
+@Time    :   2022/05/19 10:22:07
+@Author  :   Li Ruikun
+@Version :   1.0
+@Contact :   1842604700@qq.com
+@License :   (C)Copyright 2022 Li Ruikun, All rights reserved.
+@Desc    :   Train LSTM model to predict the features of the image
+"""
+
 import os
-import numpy as np
 from tqdm import tqdm
 import torch
-import torch.autograd as autograd
 from torch.autograd import Variable
 from torchvision.utils import save_image
 from torch.utils.data import DataLoader
 
-from TrainPipeline.dataset import LSTM_Dataset
+from TrainPipeline.dataset import Weather_Dataset
 from utils.visualize import Visualizer
 from utils.exception_handler import exception_handler
-# from models.dcgan import Generator, Discriminator
-from models.wgan_gp import Generator, Discriminator
+from models.dcgan import Generator as dc_generator
 from models.backbone import FeatureExtractor
-from models.conv_lstm import ConvLSTM
 from TrainPipeline.dcgan_TrainPipeline import denormalize
-import pdb
-
-
-def recover_img(imgs, img_class='radar'):
-    """将图片还原到原始范围"""
-
-    type_id = ['precip', 'radar', 'wind'].index(img_class.lower())
-    factor = [10., 70., 35.][type_id]
-    imgs = torch.clamp(input=imgs, min=0, max=factor) / factor * 255.0
-
-    return imgs
-
-
-def compute_gradient_penalty(D, real_samples, fake_samples, Tensor):
-    """Calculates the gradient penalty loss for WGAN GP"""
-
-    # Random weight term for interpolation between real and fake samples
-    alpha = Tensor(np.random.random((real_samples.size(0), 1, 1, 1)))
-
-    # Get random interpolation between real and fake samples
-    interpolates = (alpha * real_samples + ((1 - alpha)
-                    * fake_samples)).requires_grad_(True)
-    d_interpolates = D(interpolates)
-    fake = Variable(Tensor(real_samples.shape[0], 1).fill_(
-        1.0), requires_grad=False)
-
-    # Get gradient w.r.t. interpolates
-    gradients = autograd.grad(
-        outputs=d_interpolates,
-        inputs=interpolates,
-        grad_outputs=fake,
-        create_graph=True,
-        retain_graph=True,
-        only_inputs=True,
-    )[0]
-    gradients = gradients.view(gradients.size(0), -1)
-    gradient_penalty = ((gradients.norm(2, dim=1) - 1) ** 2).mean()
-
-    return gradient_penalty
 
 
 @exception_handler
-def lstm_TrainPipeline(opt):
+def lstm_TrainPipeline(opt, g_path, fe_path):
+    """LSTM Train Pipeline
+            
+    Parameters:
+    ------- 
+    opt:
+        the config of the model
+    g_path:
+        the path of the generator
+    fe_path:
+        the path of the feature extractor
+    """
+    
 
     print('LSTM! 🎉🎉🎉')
 
@@ -67,165 +48,114 @@ def lstm_TrainPipeline(opt):
     os.makedirs(opt.save_model_file, exist_ok=True)
     os.makedirs(opt.save_model_file + opt.img_class + '/', exist_ok=True)
 
+    # Initialize feature_extractor、generator and discriminator
     feature_extractor = FeatureExtractor(opt.img_size, opt.latent_dim)
-    generator = Generator(opt, [1, opt.img_size, opt.img_size])
-    discriminator = Discriminator([1, opt.img_size, opt.img_size])
-    feature_extractor.load_state_dict(torch.load(
-        "./checkpoints/wgan/Radar/fe_9_23000.pth"))
-    generator.load_state_dict(torch.load(
-        "./checkpoints/wgan/Radar/generator_9_23000.pth"))
-    discriminator.load_state_dict(torch.load(
-        "./checkpoints/wgan/Radar/discriminator_9_23000.pth"))
+    generator = dc_generator(opt)
+    
+    # Load model
+    feature_extractor.load_state_dict(torch.load(fe_path, map_location=opt.device))
+    generator.load_state_dict(torch.load(g_path, map_location=opt.device))
 
+    # Initialize predictor
+    predictor = torch.nn.LSTM(input_size=100, hidden_size=100, batch_first=True, num_layers=5)
+    
     # Loss function
     pred_loss = torch.nn.MSELoss()
-    # Loss function
-    adversarial_loss = torch.nn.BCELoss()
-    # Initialize predictor
-    # predictor = ConvLSTM(opt,input_channels=3, hidden_channels=[32, 32], kernel_size=3, step=1,
-    #                     effective_step=[0],device = opt.device)
-    predictor = torch.nn.LSTM(
-        input_size=100, hidden_size=100, batch_first=True, num_layers=5)
-
+    
+    # Device
     if opt.use_gpu:
         predictor.to(opt.device)
         pred_loss.to(opt.device)
-        adversarial_loss.to(opt.device)
         feature_extractor.to(opt.device)
         generator.to(opt.device)
-        discriminator.to(opt.device)
 
     # Optimizers
-    optimizer_TS = torch.optim.Adam(
-        predictor.parameters(), lr=opt.lr, betas=(opt.b1, opt.b2))
+    optimizer_TS = torch.optim.Adam(predictor.parameters(), lr=opt.lr, betas=(opt.b1, opt.b2))
 
-    optimizer_fe = torch.optim.SGD(feature_extractor.parameters(), lr=opt.lr)
-    optimizer_G = torch.optim.RMSprop(generator.parameters(), lr=opt.lr_g)
-    optimizer_D = torch.optim.RMSprop(discriminator.parameters(), lr=opt.lr_d)
-    optimizer_P = torch.optim.RMSprop(predictor.parameters(), lr=opt.lr_d)
-
+    # Tensor convertion
     Tensor = torch.cuda.FloatTensor if opt.use_gpu else torch.FloatTensor
 
     # Configure data loader
-    datasets1 = LSTM_Dataset(img_dir=opt.train_dataset_path + 'Precip',
-                             csv_path=opt.train_csv_path,
-                             img_size=opt.img_size)
-    dataloader1 = iter(range(len(datasets1)))
-    datasets2 = LSTM_Dataset(img_dir=opt.train_dataset_path + 'Radar',
-                             csv_path=opt.train_csv_path,
-                             img_size=opt.img_size)
-    dataloader2 = iter(range(len(datasets2)))
-    datasets3 = LSTM_Dataset(img_dir=opt.train_dataset_path + 'Wind',
-                             csv_path=opt.train_csv_path,
-                             img_size=opt.img_size)
-    dataloader3 = iter(range(len(datasets3)))
-    # dataloader = DataLoader(datasets,batch_size = 16, shuffle=False)
-    # start visualization
+    datasets1 = Weather_Dataset(img_dir=opt.train_dataset_path + 'Precip', csv_path=opt.train_csv_path, img_size=opt.img_size)
+    dataloader1 = DataLoader(datasets1, batch_size=opt.batch_size, shuffle=False, num_workers=0)
+    datasets2 = Weather_Dataset(img_dir=opt.train_dataset_path + 'Radar', csv_path=opt.train_csv_path, img_size=opt.img_size)
+    dataloader2 = DataLoader(datasets2, batch_size=opt.batch_size, shuffle=False, num_workers=0)
+    datasets3 = Weather_Dataset(img_dir=opt.train_dataset_path + 'Wind', csv_path=opt.train_csv_path, img_size=opt.img_size)
+    dataloader3 = DataLoader(datasets3, batch_size=opt.batch_size, shuffle=False, num_workers=0)
+    
+    # Start visualization
     if opt.vis:
-        vis = Visualizer(opt.vis_env)
+        vis = Visualizer(opt.vis_env, port=8099)
 
     # ----------
     #  Training
     # ----------
 
-    lambda_gp = 10
     bar_format = '{desc}{n_fmt:>3s}/{total_fmt:<5s} |{bar}|{postfix}'
     print('🚀 开始训练！')
 
     for epoch in range(opt.n_epochs):
-        with tqdm(total=len(dataloader2), bar_format=bar_format) as bar:
-            for i, imgs in enumerate(dataloader2):
+        with tqdm(total=len(dataloader1), bar_format=bar_format) as bar:
+            for i, (imgs1, imgs2, imgs3) in enumerate(zip(dataloader1, dataloader2, dataloader3)):
+                
+                # -----------
+                # Preprocess
+                # -----------
 
+                # display the first part of progress bar
                 bar.set_description(f"\33[36m🌌 Epoch {epoch:1d}")
-                # prediction ground truths
-                pred_gt = Variable(imgs[20:40, :, :].type(
-                    Tensor), requires_grad=False)
 
-                # Configure input
-                pred_in = Variable(imgs[0:20, :, :].type(Tensor))
+                # Predict a batch of images features
+                history_imgs = Variable(imgs2[0:20].type(Tensor))
+                history_features = feature_extractor(history_imgs).unsqueeze(0)
+                pred_features, _ = predictor(history_features)
+                pred_features = pred_features.squeeze(dim=0)
 
-                # Adversarial ground truths
-                valid = Variable(Tensor(pred_in.shape[0], 1).fill_(
-                    1.0), requires_grad=False).to(opt.device)
-                fake = Variable(Tensor(pred_in.shape[0], 1).fill_(
-                    0.0), requires_grad=False).to(opt.device)
-
-                # Configure input
-
-                # ---------------------
-                #  Train Discriminator
-                # ---------------------
-
-                optimizer_D.zero_grad()
+                # Generate ground truths features
+                future_imgs = Variable(imgs2[20:40].type(Tensor), requires_grad=False)
+                future_features = feature_extractor(future_imgs).unsqueeze(0)
+                future_features = future_features.squeeze(dim=0)
 
                 # -----------------
                 #  Train predictor
                 # -----------------
 
-                fe_out = feature_extractor(pred_in).unsqueeze(0)
-                # Predict a batch of images
-                fe_pred_out, _ = predictor(fe_out)
-                fe_pred_out = fe_pred_out.squeeze(dim=0)
+                predictor.zero_grad()
 
-                pred_out = generator(fe_pred_out)
-
-                # Real images
-                real_validity = discriminator(pred_gt)
-                # Fake images
-                fake_validity = discriminator(pred_out.detach())
-                # Gradient penalty
-                gradient_penalty = compute_gradient_penalty(
-                    discriminator, pred_gt.data, pred_out.detach().data, Tensor)
-
-                d_loss = -torch.mean(real_validity) + \
-                    torch.mean(fake_validity) + lambda_gp * gradient_penalty
-
-                d_loss.backward()
-                optimizer_D.step()
-
-                # -----------------
-                #  Train Generator and Feature Extractor predictor every n_critic steps
-                # -----------------
-                optimizer_G.zero_grad()
-                optimizer_fe.zero_grad()
-                optimizer_P.zero_grad()
-
-                if i % opt.n_critic == 0:
-                    # Loss measures generator's ability to fool the discriminator
-
-                    fake_validity = discriminator(pred_out)
-                    g_loss = -torch.mean(fake_validity)
-                    g_loss.backward(retain_graph=True)
-                    optimizer_G.step()
-                    optimizer_fe.step()
-                    optimizer_P.step()
-
-                    ts_loss = pred_loss(pred_out.detach(), pred_gt)
-                    # pdb.set_trace()
-                    # ts_loss.backward()
-                    optimizer_TS.step()
+                # Calculate loss, Backward and Optimize
+                ts_loss = pred_loss(pred_features, future_features)
+                ts_loss.backward()
+                optimizer_TS.step()
 
                 # display the last part of progress bar
                 bar.set_postfix_str(
                     f'TS loss: {ts_loss.item():.3f}\33[0m')
                 bar.update()
 
-                # visualize the loss curve and generated images in visdom
-                if opt.vis and i % 50 == 0:
-                    vis.plot(win='Loss', name='TS loss', y=ts_loss.item())
+                # ----------
+                # Visualize
+                # ----------
                 if opt.vis:
-                    imgs_ = denormalize(imgs.data[:1])
-                    pred_imgs_ = denormalize(pred_out.data[:1])
-                    # imgs_ = recover_img(imgs2.data[:1], opt.img_class)
-                    # pred_imgs_ = recover_img(pred_out.data[:1], opt.img_class)
-                    # pdb.set_trace()
+                    vis.plot(win='Loss', name='TS loss', y=ts_loss.item())
+                    with torch.no_grad():
+                        gen_future_imgs = generator(future_features)
+                        gen_pred_imgs = generator(pred_features)
+                    imgs_ = denormalize(imgs2.data[:1])
+                    gen_future_img = denormalize(gen_future_imgs.data[:1])
+                    gen_pred_img = denormalize(gen_pred_imgs.data[:1])
                     vis.img(name='Real', img_=imgs_, nrow=1)
-                    vis.img(name='Fake', img_=pred_imgs_, nrow=1)
+                    vis.img(name='Gen', img_=gen_future_img, nrow=1)
+                    vis.img(name='Pred', img_=gen_pred_img, nrow=1)
 
-                # save the model and generated images every 500 batches
+                # save the model and generated images every 1000 batches
                 if i % opt.sample_interval == 0:
-                    pred_imgs_ = denormalize(pred_out.data[:9])
-                    save_image(pred_imgs_, opt.result_dir + opt.img_class +
-                               '/' + f"{i}.png", nrow=3, normalize=False)
-                    torch.save(predictor.state_dict(),
-                               opt.save_model_file + opt.img_class + '/' + 'preditor_'+str(i)+'.pth')
+                    with torch.no_grad():
+                        gen_future_imgs = generator(future_features)
+                        gen_pred_imgs = generator(pred_features)
+                    gen_pred_img = denormalize(gen_pred_imgs.data[:9])/255.0
+                    gen_future_imgs = denormalize(gen_future_imgs.data[:9])/255.0
+                    imgs_ = denormalize(imgs2.data[:9])/255.0
+                    save_image(gen_pred_img, opt.result_dir + opt.img_class + '/' + f"pred_{epoch}_{i}.png", nrow=3, normalize=False)
+                    save_image(gen_future_imgs, opt.result_dir + opt.img_class + '/' + f"gen_{epoch}_{i}.png", nrow=3, normalize=False)
+                    save_image(imgs_, opt.result_dir + opt.img_class + '/' + f"real_{epoch}_{i}.png", nrow=3, normalize=False)
+                    torch.save(predictor.state_dict(), opt.save_model_file + opt.img_class + '/' + f'preditor_{epoch}_{i}.pth')
