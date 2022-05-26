@@ -26,6 +26,8 @@ from models.backbone import FeatureExtractor
 from TrainPipeline.dcgan_TrainPipeline import denormalize
 
 
+from pytorch_msssim import ssim, ms_ssim, SSIM, MS_SSIM
+
 @exception_handler
 def lstm_TrainPipeline(opt, g_path, fe_path):
     """LSTM Train Pipeline
@@ -55,18 +57,20 @@ def lstm_TrainPipeline(opt, g_path, fe_path):
     
     # Load model
     feature_extractor.load_state_dict(torch.load(fe_path, map_location=opt.device))
-    generator.load_state_dict(torch.load(g_path, map_location=opt.device))
+    # generator.load_state_dict(torch.load(g_path, map_location=opt.device))
 
     # Initialize predictor
     predictor = torch.nn.LSTM(input_size=100, hidden_size=100, batch_first=True, num_layers=5)
     
     # Loss function
     pred_loss = torch.nn.MSELoss()
+    # ssim_module = SSIM(data_range=255, size_average=True, channel=1) # channel=1 for grayscale images
     
     # Device
     if opt.use_gpu:
         predictor.to(opt.device)
         pred_loss.to(opt.device)
+        # ssim_module.to(opt.device)
         feature_extractor.to(opt.device)
         generator.to(opt.device)
 
@@ -82,7 +86,7 @@ def lstm_TrainPipeline(opt, g_path, fe_path):
     
     # Start visualization
     if opt.vis:
-        vis = Visualizer(opt.vis_env, port=8098)
+        vis = Visualizer(opt.vis_env, port=48099)
 
     # ----------
     #  Training
@@ -125,6 +129,9 @@ def lstm_TrainPipeline(opt, g_path, fe_path):
 
                 # Calculate loss, Backward and Optimize
                 ts_loss = pred_loss(pred_features, future_features)
+                # gen_pred_imgs = denormalize(generator(pred_features))
+                # ts_loss = 1.0 - ssim_module(gen_pred_imgs, denormalize(future_imgs))
+                # import pdb;pdb.set_trace()
                 ts_loss.backward()
                 optimizer_TS.step()
 

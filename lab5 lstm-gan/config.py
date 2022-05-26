@@ -97,6 +97,8 @@ class TSConfig(object):
     # 训练参数
     n_epochs = 50
     batch_size = 40 # DO NOT CHANGE!
+    lr_g = 1e-3  # initial learning rate
+    lr_d = 1e-3  # initial learning rate
     lr = 1e-3  # initial learning rate
     latent_dim = 100  # dimensionality of the latent space
     b1 = 0.5  # adam: decay of first order momentum of gradient
@@ -104,7 +106,7 @@ class TSConfig(object):
 
     # 其他参数
     vis = True  # use visdom
-    vis_env = 'LSTM_GAN'   # visdom env
+    vis_env = 'LSTM_GAN1'   # visdom env
     seed = 729  # random seed
     use_gpu = True  # use GPU
     multi_gpu = False

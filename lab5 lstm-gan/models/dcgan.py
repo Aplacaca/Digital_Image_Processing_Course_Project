@@ -12,6 +12,7 @@
 
 import torch
 import torch.nn as nn
+from .conv_lstm import ConvLSTMCell, ConvLSTM
 
 def weights_init_normal(m):
     classname = m.__class__.__name__
@@ -83,11 +84,40 @@ class Generator(nn.Module):
             nn.Conv2d(64, opt.channels, 3, stride=1, padding=1), # (40, 1, 256, 256)
             nn.Tanh(),
         )
+
         # Initialize weights
         self.apply(weights_init_normal)
 
     def forward(self, z):
         out = self.l1(z)
+        import pdb;pdb.set_trace()
         out = out.view(out.shape[0], 128, self.init_size, self.init_size)
         img = self.conv_blocks(out)
         return img
+    
+class Conv_Generator(nn.Module):
+    def __init__(self, opt):
+        super(Conv_Generator, self).__init__()
+
+        # images of one batch: (40, 1, 256, 256)
+        # shape of input: (40, opt.latent_dim=100)
+
+        self.init_size = opt.img_size // 4 # 64
+        self.bn = nn.BatchNorm2d(128)
+        # self.prep = torch.nn.ConvTranspose2d(in_channels, out_channels=3, kernel_size=3)
+        self.encoder = ConvLSTM(None,input_channels=1, hidden_channels=[32,64], kernel_size=3, step=2,
+                        effective_step=[1])
+        self.decoder = ConvLSTM(None,input_channels=64, hidden_channels=[32,4], kernel_size=3, step=2,
+                        effective_step=[1])
+        self.conv = nn.Conv2d(4, 1, 3, 1,'same')
+        # Initialize weights
+        # self.apply(weights_init_normal)
+
+    def forward(self, z):
+        out = self.encoder(z)
+        out = self.decoder(out[1][0])
+        out = self.conv(out[1][0])
+        # import pdb;pdb.set_trace()
+        # out = out.view(out.shape[0], 128, self.init_size, self.init_size)
+        # img = self.conv_blocks(out)
+        return out

@@ -76,3 +76,6 @@ if __name__ == '__main__':
     elif opt.model == 'lstmgan':
         from TrainPipeline.lstmgan_TrainPipeline import lstmgan_TrainPipeline
         lstmgan_TrainPipeline(lstm_opt)
+    elif opt.model == 'convgan':
+        from TrainPipeline.convlstm_train import convlstmgan_TrainPipeline
+        convlstmgan_TrainPipeline(lstm_opt)

@@ -54,7 +54,7 @@ class ConvLSTMCell(nn.Module):
 class ConvLSTM(nn.Module):
     # input_channels corresponds to the first input feature map
     # hidden state is a list of succeeding lstm layers.
-    def __init__(self, opt, input_channels, hidden_channels, kernel_size, step=1, effective_step=[1], device = torch.device("cpu")):
+    def __init__(self, opt, input_channels, hidden_channels, kernel_size, step=1, effective_step=[1], device = torch.device("cuda")):
         super(ConvLSTM, self).__init__()
         self.device = device
         self.input_channels = [input_channels] + hidden_channels
@@ -69,12 +69,6 @@ class ConvLSTM(nn.Module):
             cell = ConvLSTMCell(self.input_channels[i], self.hidden_channels[i], self.kernel_size, device=self.device)
             setattr(self, name, cell)
             self._all_layers.append(cell)
-        # self.backbone = resnet50()
-        self.outprocess = nn.Conv2d(in_channels=32,out_channels=1,kernel_size=(3,3),padding='same')
-        
-        # self.feature = nn.Sequential(
-            # nn.
-        # ) # (B,) to (B=1,L=20,F=100)
 
     def forward(self, input):
         internal_state = []
@@ -93,10 +87,9 @@ class ConvLSTM(nn.Module):
                 (h, c) = internal_state[i]
                 x, new_c = getattr(self, name)(x, h, c)
                 internal_state[i] = (x, new_c)
-                x_conv = self.outprocess(x)
             # only record effective steps
             if step in self.effective_step:
-                outputs.append(x_conv)
+                outputs.append(x)
 
         return outputs, (x, new_c)
 
