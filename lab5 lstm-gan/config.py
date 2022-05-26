@@ -30,6 +30,7 @@ class DefaultConfig(object):
     # 图片参数
     channels = 1  # number of image channels
     img_size = 256  # size of each image dimension
+    row_num = 5000  # num of used rows in csv file
 
     # 训练参数
     n_epochs = 200  # max epochs
@@ -91,9 +92,10 @@ class TSConfig(object):
     # 图片参数
     channels = 1  # number of image channels
     img_size = 256  # size of each image dimension
+    row_num = 5000  # num of used rows in csv file
 
     # 训练参数
-    n_epochs = 5
+    n_epochs = 50
     batch_size = 40 # DO NOT CHANGE!
     lr = 1e-3  # initial learning rate
     latent_dim = 100  # dimensionality of the latent space
@@ -108,7 +110,7 @@ class TSConfig(object):
     multi_gpu = False
     device = 'cuda' if torch.cuda.is_available() and use_gpu else 'cpu'  # available device
     # device = "cpu"
-    num_workers = 1  # how many workers for loading data
+    num_workers = 8  # how many workers for loading data
     sample_interval = 100  # print info every N batch
 
     def parse(self, kwargs):

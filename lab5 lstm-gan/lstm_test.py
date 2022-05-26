@@ -21,7 +21,7 @@ from config import TSConfig
 from TrainPipeline.dataset import Weather_Dataset
 from utils.visualize import Visualizer
 from utils.exception_handler import exception_handler
-from models.dcgan import Generator as dc_generator
+from models.dcgan_deep import Generator as dc_generator
 from models.backbone import FeatureExtractor
 from TrainPipeline.dcgan_TrainPipeline import denormalize
 

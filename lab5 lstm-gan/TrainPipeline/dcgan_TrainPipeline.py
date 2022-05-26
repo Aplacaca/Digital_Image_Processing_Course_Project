@@ -20,7 +20,7 @@ from torch.utils.data import DataLoader
 from TrainPipeline.dataset import Weather_Dataset
 from utils.visualize import Visualizer
 from utils.exception_handler import exception_handler
-from utils.log import denormalize, save_result_and_model
+from utils.log import denormalize, save_result, save_model
 from models.backbone import FeatureExtractor
 from models.dcgan import Generator as dc_generator, Discriminator as dc_disciminator
 
@@ -71,7 +71,7 @@ def dcgan_TrainPipeline(opt):
     Tensor = torch.cuda.FloatTensor if opt.use_gpu else torch.FloatTensor
 
     # Configure data loader
-    datasets = Weather_Dataset(img_dir=opt.train_dataset_path + opt.img_class, csv_path=opt.train_csv_path, img_size=opt.img_size, img_num=40*5000)
+    datasets = Weather_Dataset(img_dir=opt.train_dataset_path + opt.img_class, csv_path=opt.train_csv_path, img_size=opt.img_size, img_num=40*opt.row_num)
     dataloader = DataLoader(datasets, batch_size=40, shuffle=False,
                         num_workers=opt.num_workers, drop_last=True)
 
@@ -85,6 +85,11 @@ def dcgan_TrainPipeline(opt):
 
     bar_format = '{desc}{n_fmt:>3s}/{total_fmt:<5s} |{bar}|{postfix}'
     print('🚀 开始训练！')
+
+    # Save config
+    fp = open(opt.save_model_file + opt.img_class + '/'  + 'config.txt', 'w')
+    fp.write(str(opt.__class__.__dict__))
+    fp.close()
 
     # img = None
     for epoch in range(opt.n_epochs):
@@ -165,7 +170,7 @@ def dcgan_TrainPipeline(opt):
                 # ----------
                 # Visualize
                 # ----------
-                if opt.vis and i % 50 == 0:
+                if opt.vis:
                     vis.plot(win='Loss', name='G loss', y=g_loss.item())
                     vis.plot(win='Loss', name='D loss', y=d_loss.item())
                     
@@ -178,7 +183,9 @@ def dcgan_TrainPipeline(opt):
         if epoch % 5 == 0:
             real_imgs = torch.cat(tuple((datasets[i].unsqueeze(0) for i in np.random.choice(datasets.__len__(), size=9, replace=False))), dim=0)
             real_imgs = Variable(real_imgs.type(Tensor))
-            save_result_and_model(epoch, 50, opt, real_imgs, feature_extractor, generator, discriminator)
+            save_result(epoch, opt, real_imgs, feature_extractor, generator)
+        if epoch % 10 == 0:
+            save_model(epoch, 10, opt, feature_extractor, generator, discriminator)
 
 if __name__ == '__main__':
     dcgan_TrainPipeline()

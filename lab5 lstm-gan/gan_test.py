@@ -64,7 +64,7 @@ def dcgan_Test():
 
     # Initialize feature_extractor、generator and discriminator
     if opt.gan_model == 'dcgan':
-        from models.dcgan import Generator, Discriminator
+        from models.dcgan_deep import Generator, Discriminator
         feature_extractor = FeatureExtractor(opt.img_size, opt.latent_dim)
         generator = Generator(opt)
         discriminator = Discriminator(opt)
