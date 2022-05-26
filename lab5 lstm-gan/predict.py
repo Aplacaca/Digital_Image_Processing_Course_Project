@@ -19,7 +19,6 @@ from torch.autograd import Variable
 import torchvision.transforms.functional as F
 
 from TrainPipeline.dataset import TEST_Dataset
-from torchvision.utils import save_image
 from utils.exception_handler import exception_handler
 from models.dcgan import Generator as dc_generator
 from models.backbone import FeatureExtractor
@@ -63,25 +62,32 @@ def Predict(opt):
     os.makedirs(result_dir, exist_ok=True)
 
 
-    # Initialize feature_extractor、generator and discriminator
+    # Initialize feature_extractor, generator, predictor ,optimizer and loss_fn
     feature_extractor = FeatureExtractor(opt.img_size, opt.latent_dim)
     generator = dc_generator(opt)
     predictor = torch.nn.LSTM(input_size=100, hidden_size=100, batch_first=True, num_layers=5)
-    
-    # Load model
-    fe_path = f'best/{opt.type.lower()}_fe.pth'
-    g_path = f'best/{opt.type.lower()}_generator.pth'
-    lstm_path = f'best/{opt.type.lower()}_lstm.pth'
-    feature_extractor.load_state_dict(torch.load(fe_path))
-    generator.load_state_dict(torch.load(g_path))
-    predictor.load_state_dict(torch.load(lstm_path))
-    print(f'🌈 模型加载成功！')
-    
+    pred_loss = torch.nn.MSELoss()
+
     # Device
     if opt.use_gpu:
         predictor.to('cuda')
         feature_extractor.to('cuda')
         generator.to('cuda')
+        pred_loss.to('cuda')
+    
+    # Optimizer
+    optimizer_TS = torch.optim.Adam(predictor.parameters(), lr=1e-3, betas=(0.5, 0.999))
+
+    # Load model
+    fe_path = f'best/{opt.type.lower()}_fe.pth'
+    g_path = f'best/{opt.type.lower()}_generator.pth'
+    lstm_path = f'best/{opt.type.lower()}_lstm.pth'
+    lstm_optim_path = f'best/{opt.type.lower()}_lstm_optim.pth'
+    feature_extractor.load_state_dict(torch.load(fe_path))
+    generator.load_state_dict(torch.load(g_path))
+    predictor.load_state_dict(torch.load(lstm_path))
+    optimizer_TS.load_state_dict(torch.load(lstm_optim_path))
+    print(f'🌈 模型加载成功！')
 
     # Tensor convertion
     Tensor = torch.cuda.FloatTensor if opt.use_gpu else torch.FloatTensor
@@ -109,28 +115,45 @@ def Predict(opt):
             # display the first part of progress bar
             bar.set_description(f"\33[36m🌌 ")
             
-            # Predict a batch of images features
+            # Get the data
             imgs = datasets[folder_id]
-            history_imgs = Variable(imgs.type(Tensor))
-            history_features = feature_extractor(history_imgs).unsqueeze(0)
-            pred_features, _ = predictor(history_features)
-            pred_features = pred_features.squeeze(dim=0)
-            
-            # Generate the predict images
-            pred_imgs = generator(pred_features)
-            pred_imgs = denormalize(pred_imgs.data)
-            
-            for i in range(20):
-                # pred_imgs[i] = F.resize(pred_imgs[i], size=(480, 560),interpolation=2) # resize to [480, 560]
-                # save_image(pred_imgs[i], sub_result_dir + f"{opt.type.lower()}_{(i+1):03d}.png", nrow=1, normalize=False)
 
-                result = cv2.resize(torch.permute(pred_imgs[i], (1,2,0)).cpu().numpy(), (560, 480))
-                cv2.imwrite(sub_result_dir + f"{opt.type.lower()}_{(i+1):03d}.png", result)
+            # Train LSTM for each image set
+            imgs = Variable(imgs.type(Tensor))
+            history_imgs = imgs[:10].detach()
+            future_imgs = imgs[10:].detach()
+            history_features = feature_extractor(history_imgs).unsqueeze(0)
+            future_features = feature_extractor(future_imgs)
+            for i in range(100):
+                predictor.zero_grad()
+                history_features = history_features.detach()
+                future_features = future_features.detach()
+                pred_features, _ = predictor(history_features)
+                pred_features = pred_features.squeeze(dim=0)
+                ts_loss = pred_loss(pred_features, future_features)
+                ts_loss.backward()
+                optimizer_TS.step()
+
+            # Predict a batch of images
+            imgs = imgs[10:].detach()
+            for i in range(2):
+                history_imgs = imgs
+                history_features = feature_extractor(history_imgs).unsqueeze(0)
+                pred_features, _ = predictor(history_features)
+                pred_features = pred_features.squeeze(dim=0)
+
+                # Generate the predict images
+                pred_imgs = generator(pred_features)
+                imgs = pred_imgs.detach()
+                
+                pred_imgs = denormalize(pred_imgs.data)
+                for j in range(10):
+                    result = cv2.resize(torch.permute(pred_imgs[j], (1,2,0)).cpu().numpy(), (560, 480))
+                    cv2.imwrite(sub_result_dir + f"{opt.type.lower()}_{(10*i+j+1):03d}.png", result)
 
             # display the last part of progress bar
             bar.set_postfix_str('\33[0m')
             bar.update()
 
 if __name__ == '__main__':
-    with torch.no_grad():
-        Predict(opt)
+    Predict(opt)

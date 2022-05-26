@@ -22,7 +22,7 @@ from utils.visualize import Visualizer
 from utils.exception_handler import exception_handler
 from utils.log import denormalize, save_result_and_model
 from models.backbone import FeatureExtractor
-from models.dcgan import Generator as dc_generator, Discriminator as dc_disciminator
+from models.dcgan_deep import Generator as dc_generator, Discriminator as dc_disciminator
 
 
 @exception_handler

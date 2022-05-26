@@ -18,7 +18,7 @@ def denormalize(imgs, mean=0.5, variance=0.5):
     return imgs.mul(variance).add(mean) * 255.0
 
 
-def save_result_and_model(epoch, weight_thres, opt, imgs, feature_extractor, generator, discriminator):
+def save_result(epoch, opt, imgs, feature_extractor, generator):
 
     # save result
     with torch.no_grad():
@@ -30,8 +30,13 @@ def save_result_and_model(epoch, weight_thres, opt, imgs, feature_extractor, gen
     save_image(real_imgs_, opt.result_dir + opt.img_class + '/' + f"real_{epoch}.png", nrow=3, normalize=False)
     save_image(fake_imgs_, opt.result_dir + opt.img_class + '/' + f"fake_{epoch}.png", nrow=3, normalize=False)
     
+    
+def save_model(epoch, weight_thres, opt, feature_extractor, generator, discriminator):
+
     # save model
-    if epoch > weight_thres:
-        torch.save(feature_extractor.state_dict(), opt.save_model_file + opt.img_class + '/' + f"fe_{epoch}.pth")
-        torch.save(generator.state_dict(), opt.save_model_file + opt.img_class + '/' + f'generator_{epoch}.pth')
-        torch.save(discriminator.state_dict(), opt.save_model_file + opt.img_class + '/' + f'discriminator_{epoch}.pth')
+    if epoch < weight_thres:
+        return 
+        
+    torch.save(feature_extractor.state_dict(), opt.save_model_file + opt.img_class + '/' + f"fe_{epoch}.pth")
+    torch.save(generator.state_dict(), opt.save_model_file + opt.img_class + '/' + f'generator_{epoch}.pth')
+    torch.save(discriminator.state_dict(), opt.save_model_file + opt.img_class + '/' + f'discriminator_{epoch}.pth')

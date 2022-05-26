@@ -11,6 +11,7 @@
 """
 
 import os
+import numpy as np
 from tqdm import tqdm
 import torch
 from torch.autograd import Variable
@@ -76,16 +77,12 @@ def lstm_TrainPipeline(opt, g_path, fe_path):
     Tensor = torch.cuda.FloatTensor if opt.use_gpu else torch.FloatTensor
 
     # Configure data loader
-    datasets1 = Weather_Dataset(img_dir=opt.train_dataset_path + 'Precip', csv_path=opt.train_csv_path, img_size=opt.img_size)
-    dataloader1 = DataLoader(datasets1, batch_size=opt.batch_size, shuffle=False, num_workers=0)
-    datasets2 = Weather_Dataset(img_dir=opt.train_dataset_path + 'Radar', csv_path=opt.train_csv_path, img_size=opt.img_size)
-    dataloader2 = DataLoader(datasets2, batch_size=opt.batch_size, shuffle=False, num_workers=0)
-    datasets3 = Weather_Dataset(img_dir=opt.train_dataset_path + 'Wind', csv_path=opt.train_csv_path, img_size=opt.img_size)
-    dataloader3 = DataLoader(datasets3, batch_size=opt.batch_size, shuffle=False, num_workers=0)
+    datasets = Weather_Dataset(img_dir=opt.train_dataset_path + 'Radar', csv_path=opt.train_csv_path, img_size=opt.img_size, img_num=40*opt.row_num)
+    dataloader = DataLoader(datasets, batch_size=opt.batch_size, shuffle=False, num_workers=opt.num_workers)
     
     # Start visualization
     if opt.vis:
-        vis = Visualizer(opt.vis_env, port=8099)
+        vis = Visualizer(opt.vis_env, port=8098)
 
     # ----------
     #  Training
@@ -94,9 +91,14 @@ def lstm_TrainPipeline(opt, g_path, fe_path):
     bar_format = '{desc}{n_fmt:>3s}/{total_fmt:<5s} |{bar}|{postfix}'
     print('🚀 开始训练！')
 
+    # Save config
+    fp = open(opt.save_model_file + opt.img_class + '/'  + 'config.txt', 'w')
+    fp.write(str(opt.__class__.__dict__))
+    fp.close()
+
     for epoch in range(opt.n_epochs):
-        with tqdm(total=len(dataloader1), bar_format=bar_format) as bar:
-            for i, (imgs1, imgs2, imgs3) in enumerate(zip(dataloader1, dataloader2, dataloader3)):
+        with tqdm(total=len(dataloader), bar_format=bar_format) as bar:
+            for i, imgs in enumerate(dataloader):
                 
                 # -----------
                 # Preprocess
@@ -106,20 +108,19 @@ def lstm_TrainPipeline(opt, g_path, fe_path):
                 bar.set_description(f"\33[36m🌌 Epoch {epoch:1d}")
 
                 # Predict a batch of images features
-                history_imgs = Variable(imgs2[0:20].type(Tensor))
+                history_imgs = Variable(imgs[0:20].type(Tensor))
                 history_features = feature_extractor(history_imgs).unsqueeze(0)
                 pred_features, _ = predictor(history_features)
                 pred_features = pred_features.squeeze(dim=0)
 
                 # Generate ground truths features
-                future_imgs = Variable(imgs2[20:40].type(Tensor), requires_grad=False)
-                future_features = feature_extractor(future_imgs).unsqueeze(0)
-                future_features = future_features.squeeze(dim=0)
+                future_imgs = Variable(imgs[20:40].type(Tensor), requires_grad=False)
+                future_features = feature_extractor(future_imgs)
 
                 # -----------------
                 #  Train predictor
                 # -----------------
-
+                
                 predictor.zero_grad()
 
                 # Calculate loss, Backward and Optimize
@@ -127,7 +128,7 @@ def lstm_TrainPipeline(opt, g_path, fe_path):
                 ts_loss.backward()
                 optimizer_TS.step()
 
-                # display the last part of progress bar
+                # Display the last part of progress bar
                 bar.set_postfix_str(
                     f'TS loss: {ts_loss.item():.3f}\33[0m')
                 bar.update()
@@ -135,27 +136,43 @@ def lstm_TrainPipeline(opt, g_path, fe_path):
                 # ----------
                 # Visualize
                 # ----------
+
                 if opt.vis:
                     vis.plot(win='Loss', name='TS loss', y=ts_loss.item())
                     with torch.no_grad():
                         gen_future_imgs = generator(future_features)
                         gen_pred_imgs = generator(pred_features)
-                    imgs_ = denormalize(imgs2.data[:1])
+                    imgs_ = denormalize(imgs.data[:1])
                     gen_future_img = denormalize(gen_future_imgs.data[:1])
                     gen_pred_img = denormalize(gen_pred_imgs.data[:1])
                     vis.img(name='Real', img_=imgs_, nrow=1)
                     vis.img(name='Gen', img_=gen_future_img, nrow=1)
                     vis.img(name='Pred', img_=gen_pred_img, nrow=1)
 
-                # save the model and generated images every 1000 batches
-                if i % opt.sample_interval == 0:
-                    with torch.no_grad():
-                        gen_future_imgs = generator(future_features)
-                        gen_pred_imgs = generator(pred_features)
-                    gen_pred_img = denormalize(gen_pred_imgs.data[:9])/255.0
-                    gen_future_imgs = denormalize(gen_future_imgs.data[:9])/255.0
-                    imgs_ = denormalize(imgs2.data[:9])/255.0
-                    save_image(gen_pred_img, opt.result_dir + opt.img_class + '/' + f"pred_{epoch}_{i}.png", nrow=3, normalize=False)
-                    save_image(gen_future_imgs, opt.result_dir + opt.img_class + '/' + f"gen_{epoch}_{i}.png", nrow=3, normalize=False)
-                    save_image(imgs_, opt.result_dir + opt.img_class + '/' + f"real_{epoch}_{i}.png", nrow=3, normalize=False)
-                    torch.save(predictor.state_dict(), opt.save_model_file + opt.img_class + '/' + f'preditor_{epoch}_{i}.pth')
+        # Save the model and generated images every epoch
+        rand_index = np.random.randint(0, opt.row_num) * 40
+        sample = torch.cat(tuple((datasets[i].unsqueeze(0) for i in range(rand_index, rand_index+40))), dim=0)
+        
+        history_sample = Variable(sample[0:20].type(Tensor))
+        history_sample_features = feature_extractor(history_sample).unsqueeze(0)
+        
+        pred_features, _ = predictor(history_sample_features)
+        pred_features = pred_features.squeeze(dim=0)
+        
+        future_sample = Variable(sample[20:40].type(Tensor))
+        future_sample_features = feature_extractor(future_sample)
+        
+        with torch.no_grad():
+            gen_future_sample = generator(future_sample_features)
+            gen_pred_sample = generator(pred_features)
+        
+        gen_pred_sample = denormalize(gen_pred_sample.data)/255.0
+        gen_future_sample = denormalize(gen_future_sample.data)/255.0
+        future_sample = denormalize(future_sample.data)/255.0
+        
+        save_image(gen_pred_sample[:9], opt.result_dir + opt.img_class + '/' + f"{epoch}_pred.png", nrow=3, normalize=False)
+        save_image(gen_future_sample[:9], opt.result_dir + opt.img_class + '/' + f"{epoch}_gen.png", nrow=3, normalize=False)
+        save_image(future_sample[:9], opt.result_dir + opt.img_class + '/' + f"{epoch}_real.png", nrow=3, normalize=False)
+        
+        torch.save(predictor.state_dict(), opt.save_model_file + opt.img_class + '/' + f'preditor_{epoch}.pth')
+        torch.save(optimizer_TS.state_dict(), opt.save_model_file + opt.img_class + '/' + f'optimizer_TS_{epoch}.pth')

@@ -100,7 +100,9 @@ class ParseCSV:
 
         data_list = []
         csv_data = pd.read_csv(self.csv_path)
-        for line in csv_data.values:
+        random_index = np.random.choice(len(csv_data), len(csv_data), replace=False)
+        for index in random_index:
+            line = csv_data.values[index]
             for column in range(40):
                 data_list.append(line[column])
 

@@ -22,7 +22,7 @@ from utils.setup_seed import setup_seed
 parser = argparse.ArgumentParser()
 parser.add_argument('--model', type=str, default='dcgan', help='the model to train')
 parser.add_argument('--img_class', type=str, default='Radar', help='the image class to generate')
-parser.add_argument('--gpu', type=int, default=1, help='gpu id')
+parser.add_argument('--gpu', type=int, default=0, help='gpu id')
 parser.add_argument('--multi_gpu', type=bool, default=False, help='xxx')
 parser.add_argument('--seed', type=int, default=729, help='random seed')
 parser.add_argument('--vis', type=bool, default=False, help='visdom')
