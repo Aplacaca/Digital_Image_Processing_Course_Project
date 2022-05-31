@@ -40,13 +40,13 @@ class Discriminator(nn.Module):
             *discriminator_block(16, 32), # (40, 32, 64, 64)
             *discriminator_block(32, 64), # (40, 64, 32, 32)
             *discriminator_block(64, 128), # (40, 128, 16, 16)
-            # *discriminator_block(128, 256), # (40, 256, 8, 8)
+            *discriminator_block(128, 256), # (40, 256, 8, 8)
         )
 
         # The height and width of downsampled image
-        ds_size = opt.img_size // 2 ** 4
+        ds_size = opt.img_size // 2 ** 5
         self.adv_layer = nn.Sequential(
-            nn.Linear(128 * ds_size ** 2, 1), nn.Sigmoid())
+            nn.Linear(256 * ds_size ** 2, 1), nn.Sigmoid())
 
         # Initialize weights
         self.apply(weights_init_normal)
@@ -105,18 +105,23 @@ class Conv_Generator(nn.Module):
         self.init_size = opt.img_size // 4 # 64
         self.bn = nn.BatchNorm2d(128)
         # self.prep = torch.nn.ConvTranspose2d(in_channels, out_channels=3, kernel_size=3)
-        self.encoder = ConvLSTM(None,input_channels=1, hidden_channels=[32,64], kernel_size=3, step=2,
+        self.encoder = ConvLSTM(None,input_channels=1, hidden_channels=[32,64], kernel_size=5, step=1,
                         effective_step=[1])
-        self.decoder = ConvLSTM(None,input_channels=64, hidden_channels=[32,4], kernel_size=3, step=2,
+        self.decoder = ConvLSTM(None,input_channels=64, hidden_channels=[32,64], kernel_size=5, step=1,
                         effective_step=[1])
-        self.conv = nn.Conv2d(4, 1, 3, 1,'same')
+        self.outprocess = nn.Sequential(
+            nn.Conv2d(64, 16, 3, 1,'same'),
+            nn.Conv2d(16, 1, 3, 1,'same'),
+            # nn.Conv2d(4, 1, 3, 1,'same'),
+            nn.Tanh()
+        )
         # Initialize weights
         # self.apply(weights_init_normal)
 
     def forward(self, z):
         out = self.encoder(z)
         out = self.decoder(out[1][0])
-        out = self.conv(out[1][0])
+        out = self.outprocess(out[1][0])
         # import pdb;pdb.set_trace()
         # out = out.view(out.shape[0], 128, self.init_size, self.init_size)
         # img = self.conv_blocks(out)

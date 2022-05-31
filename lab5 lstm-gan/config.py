@@ -109,7 +109,7 @@ class TSConfig(object):
     vis_env = 'LSTM_GAN1'   # visdom env
     seed = 729  # random seed
     use_gpu = True  # use GPU
-    multi_gpu = False
+    multi_gpu = True
     device = 'cuda' if torch.cuda.is_available() and use_gpu else 'cpu'  # available device
     # device = "cpu"
     num_workers = 8  # how many workers for loading data
