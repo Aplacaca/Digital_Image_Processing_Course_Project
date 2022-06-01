@@ -10,7 +10,6 @@
 @Desc    :   Test the selected model
 """
 
-import time
 import argparse
 import numpy as np
 from tqdm import tqdm
@@ -19,7 +18,7 @@ from torch.autograd import Variable
 from torch.utils.data import DataLoader
 
 from config import DefaultConfig
-from TrainPipeline.dataset import GAN_Dataset
+from TrainPipeline.dataset import Weather_Dataset
 from utils.visualize import Visualizer
 from utils.log import denormalize
 from utils.setup_seed import setup_seed
@@ -39,7 +38,7 @@ EPOCH = parse.epoch
 # weight 
 fe_weight = f'checkpoints/dcgan/{parse.type}/fe_{EPOCH}.pth'
 g_weight = f'checkpoints/dcgan/{parse.type}/generator_{EPOCH}.pth'
-d_weight = f'checkpoints/dcgan/{parse.type}/discriminator_{EPOCH}.pth'
+# d_weight = f'checkpoints/dcgan/{parse.type}/discriminator_{EPOCH}.pth'
 
 
 # config
@@ -64,35 +63,34 @@ def dcgan_Test():
 
     # Initialize feature_extractor、generator and discriminator
     if opt.gan_model == 'dcgan':
-        from models.dcgan_deep import Generator, Discriminator
+        from models.dcgan import Generator
         feature_extractor = FeatureExtractor(opt.img_size, opt.latent_dim)
         generator = Generator(opt)
-        discriminator = Discriminator(opt)
+        # discriminator = Discriminator(opt)
     elif opt.gan_model == 'wgan':
         from models.wgan_gp import Generator, Discriminator
         feature_extractor = FeatureExtractor(opt.img_size, opt.latent_dim)
         generator = Generator(opt, [1, opt.img_size, opt.img_size])
-        discriminator = Discriminator(opt, [1, opt.img_size, opt.img_size])
+        # discriminator = Discriminator(opt, [1, opt.img_size, opt.img_size])
 
     # load weight
     feature_extractor.load_state_dict(torch.load(fe_weight))
     generator.load_state_dict(torch.load(g_weight))
-    discriminator.load_state_dict(torch.load(d_weight))
+    # discriminator.load_state_dict(torch.load(d_weight))
     print(f'🌈 {opt.gan_model.capitalize()}[{opt.img_class}] 模型加载成功！')
 
     # device
     if opt.use_gpu:
         feature_extractor.to(opt.device)
         generator.to(opt.device)
-        discriminator.to(opt.device)
+        # discriminator.to(opt.device)
 
     # Tensor convertion
     Tensor = torch.cuda.FloatTensor if opt.use_gpu else torch.FloatTensor
 
     # Configure data loader
-    datasets = GAN_Dataset(img_dir=opt.train_dataset_path + opt.img_class, img_size=opt.img_size)
-    dataloader = DataLoader(datasets, batch_size=1, shuffle=False,
-                        num_workers=0, drop_last=True)
+    datasets = Weather_Dataset(img_dir=opt.train_dataset_path + opt.img_class, csv_path=opt.train_csv_path, img_size=opt.img_size)
+    dataloader = DataLoader(datasets, batch_size=1, shuffle=False, num_workers=0, drop_last=True)
 
     # start visualization
     if opt.vis:
@@ -133,9 +131,6 @@ def dcgan_Test():
                     fake_imgs_ = denormalize(fake_imgs.data[:1])
                     vis.img(name='Real', img_=imgs_, nrow=1)
                     vis.img(name='Fake', img_=fake_imgs_, nrow=1)
-                
-                # sleep
-                time.sleep(0.1)
 
 
 if __name__ == '__main__':

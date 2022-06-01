@@ -74,8 +74,7 @@ class FeatureExtractor(nn.Module):
         vgg16 模型
     """
     #输入为 (40, 1, 256, 256)，vgg提取后变化为 (N, 128, 16, 16)
-    cfg = [16, 16, 'M', 32, 32, 'M', 64, 64,
-           64, 'C', 128, 128, 128, 'M']
+    cfg = [16, 16, 'M', 32, 32, 'M', 64, 64, 64, 'C', 128, 128, 128, 'M']
 
     def __init__(self, img_size, latent_dim):
         super(FeatureExtractor, self).__init__()

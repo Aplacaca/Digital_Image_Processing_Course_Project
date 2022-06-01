@@ -30,12 +30,12 @@ class DefaultConfig(object):
     # 图片参数
     channels = 1  # number of image channels
     img_size = 256  # size of each image dimension
-    row_num = 5000  # num of used rows in csv file
+    row_num = 6000  # num of used rows in csv file
 
     # 训练参数
-    n_epochs = 200  # max epochs
+    n_epochs = 40  # max epochs
     n_critic = 5  # number of training steps for wgan_gp discriminator per iter
-    batch_size = 40 # DO NOT CHANGE!
+    batch_size = 24  # mini-batch size
     lr_fe = 1e-4  # feature_extractor learning rate
     lr_g = 1e-4  # generator learning rate
     lr_d = 1e-4  # discriminator learning rate

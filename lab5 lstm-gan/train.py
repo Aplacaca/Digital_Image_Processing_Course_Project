@@ -25,7 +25,7 @@ parser.add_argument('--img_class', type=str, default='Radar', help='the image cl
 parser.add_argument('--gpu', type=int, default=0, help='gpu id')
 parser.add_argument('--multi_gpu', type=bool, default=False, help='xxx')
 parser.add_argument('--seed', type=int, default=729, help='random seed')
-parser.add_argument('--vis', type=bool, default=False, help='visdom')
+parser.add_argument('--vis', type=bool, action='store', default=False, help='visdom')
 
 # global config
 opt = parser.parse_args()
@@ -70,8 +70,8 @@ if __name__ == '__main__':
         wgan_Diff(gan_opt)
     elif opt.model == 'lstm':
         from TrainPipeline.lstm_TrainPipeline import lstm_TrainPipeline
-        g_path = 'best/radar_generator.pth'
-        fe_path = 'best/radar_fe.pth'
+        g_path = f'best/{opt.img_class.lower()}_generator.pth'
+        fe_path = f'best/{opt.img_class.lower()}_fe.pth'
         lstm_TrainPipeline(lstm_opt, g_path, fe_path)
     elif opt.model == 'lstmgan':
         from TrainPipeline.lstmgan_TrainPipeline import lstmgan_TrainPipeline

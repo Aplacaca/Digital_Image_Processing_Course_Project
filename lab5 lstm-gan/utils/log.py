@@ -31,7 +31,7 @@ def save_result(epoch, opt, imgs, feature_extractor, generator):
     save_image(fake_imgs_, opt.result_dir + opt.img_class + '/' + f"fake_{epoch}.png", nrow=3, normalize=False)
     
     
-def save_model(epoch, weight_thres, opt, feature_extractor, generator, discriminator):
+def save_model(epoch, weight_thres, opt, feature_extractor, generator, discriminator=None):
 
     # save model
     if epoch < weight_thres:
@@ -39,4 +39,6 @@ def save_model(epoch, weight_thres, opt, feature_extractor, generator, discrimin
         
     torch.save(feature_extractor.state_dict(), opt.save_model_file + opt.img_class + '/' + f"fe_{epoch}.pth")
     torch.save(generator.state_dict(), opt.save_model_file + opt.img_class + '/' + f'generator_{epoch}.pth')
-    torch.save(discriminator.state_dict(), opt.save_model_file + opt.img_class + '/' + f'discriminator_{epoch}.pth')
+    
+    if discriminator is not None:
+        torch.save(discriminator.state_dict(), opt.save_model_file + opt.img_class + '/' + f'discriminator_{epoch}.pth')

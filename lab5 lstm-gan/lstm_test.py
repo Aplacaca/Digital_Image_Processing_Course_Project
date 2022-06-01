@@ -10,7 +10,6 @@
 @Desc    :   Train LSTM model to predict the features of the image
 """
 
-import time
 import argparse
 from tqdm import tqdm
 import torch
@@ -21,7 +20,7 @@ from config import TSConfig
 from TrainPipeline.dataset import Weather_Dataset
 from utils.visualize import Visualizer
 from utils.exception_handler import exception_handler
-from models.dcgan_deep import Generator as dc_generator
+from models.dcgan import Generator as dc_generator
 from models.backbone import FeatureExtractor
 from TrainPipeline.dcgan_TrainPipeline import denormalize
 
@@ -30,9 +29,15 @@ parser = argparse.ArgumentParser()
 parser.add_argument('--g_path', type=str, default='best/dcgan_radar_generator_90.pth', help='xxx')
 parser.add_argument('--fe_path', type=str, default='best/dcgan_radar_fe_90.pth', help='xxx')
 parser.add_argument('--lstm_path', type=str, default='best/lstm_preditor_0_7000.pth', help='xxx')
+parser.add_argument('--type', type=str, default='Radar', help='xxx')
 parser.add_argument('--cuda', type=int, default=0, help='xxx')
-parser.add_argument('--port', type=int, default=8099, help='xxx')
+parser.add_argument('--port', type=int, default=8200, help='xxx')
 parse = parser.parse_args()
+
+# weight 
+fe_weight = f'best/{parse.type.lower()}_fe.pth'
+g_weight = f'best//{parse.type.lower()}_generator.pth'
+p_weight = f'best//{parse.type.lower()}_predictor.pth'
 
 # config
 opt = TSConfig()
@@ -44,7 +49,7 @@ else:
 
 
 @exception_handler
-def lstm_Test(opt, g_path, fe_path, lstm_path):
+def lstm_Test(opt):
     """LSTM Test Pipeline
             
     Parameters:
@@ -69,9 +74,9 @@ def lstm_Test(opt, g_path, fe_path, lstm_path):
     predictor = torch.nn.LSTM(input_size=100, hidden_size=100, batch_first=True, num_layers=5)
     
     # Load model
-    feature_extractor.load_state_dict(torch.load(fe_path))
-    generator.load_state_dict(torch.load(g_path))
-    predictor.load_state_dict(torch.load(lstm_path))
+    feature_extractor.load_state_dict(torch.load(fe_weight))
+    generator.load_state_dict(torch.load(g_weight))
+    predictor.load_state_dict(torch.load(p_weight))
     print(f'🌈 模型加载成功！')
     
     # Device
@@ -84,8 +89,8 @@ def lstm_Test(opt, g_path, fe_path, lstm_path):
     Tensor = torch.cuda.FloatTensor if opt.use_gpu else torch.FloatTensor
 
     # Configure data loader
-    datasets = Weather_Dataset(img_dir=opt.train_dataset_path + 'Radar', csv_path=opt.train_csv_path, img_size=opt.img_size)
-    dataloader = DataLoader(datasets, batch_size=opt.batch_size, shuffle=False, num_workers=0)
+    datasets = Weather_Dataset(img_dir=opt.train_dataset_path + parse.type.capitalize(), csv_path=opt.train_csv_path, img_size=opt.img_size)
+    dataloader = DataLoader(datasets, batch_size=40, shuffle=False, num_workers=8, drop_last=True)
     
     print(f'🔋 数据加载成功！')
 
@@ -133,9 +138,6 @@ def lstm_Test(opt, g_path, fe_path, lstm_path):
             bar.set_postfix_str('\33[0m')
             bar.update()
 
-            # sleep
-            time.sleep(0.1)
-
 if __name__ == '__main__':
     with torch.no_grad():
-        lstm_Test(opt, parse.g_path, parse.fe_path, parse.lstm_path)
+        lstm_Test(opt)

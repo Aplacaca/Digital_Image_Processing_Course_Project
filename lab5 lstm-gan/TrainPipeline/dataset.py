@@ -86,8 +86,9 @@ from torch.utils.data import Dataset, DataLoader
 class ParseCSV:
     """解析csv数据集"""
 
-    def __init__(self, csv_path):
+    def __init__(self, csv_path, shuffle=True):
         self.csv_path = csv_path
+        self.shuffle = shuffle
 
     def __call__(self):
         """
@@ -100,19 +101,25 @@ class ParseCSV:
 
         data_list = []
         csv_data = pd.read_csv(self.csv_path)
-        random_index = np.random.choice(len(csv_data), len(csv_data), replace=False)
-        for index in random_index:
-            line = csv_data.values[index]
-            for column in range(40):
-                data_list.append(line[column])
+
+        if self.shuffle:
+            random_index = np.random.choice(len(csv_data), len(csv_data), replace=False)
+            for index in random_index:
+                line = csv_data.values[index]
+                for column in range(40):
+                    data_list.append(line[column])
+        else:
+            for line in csv_data.values:
+                for column in range(40):
+                    data_list.append(line[column])
 
         return data_list
 
 
 class Weather_Dataset(Dataset):
 
-    def __init__(self, img_dir, csv_path, img_size, img_num=None):
-        """
+    def __init__(self, img_dir, csv_path, img_size, img_num=None, shuffle=True):
+        """以行为单位读取csv文件，并返回图片
                 
         Parameters:
         ------- 
@@ -128,10 +135,11 @@ class Weather_Dataset(Dataset):
         
         self.img_dir = img_dir
         self.img_size = img_size
-        self.data_list = ParseCSV(csv_path)()  # List[str]
+        self.data_list = ParseCSV(csv_path, shuffle)()  # List[str]
         self.img_num = img_num if img_num is not None else len(self.data_list)
         self.transform = transforms.Compose([
             transforms.Resize((self.img_size, self.img_size)),
+            # transforms.ColorJitter(contrast=(1.5, 1.501)),
             transforms.ToTensor(),
             transforms.Normalize(mean=[0.5], std=[0.5])
         ])
@@ -145,8 +153,7 @@ class Weather_Dataset(Dataset):
             按照csv中顺序读取索引为index的图片，形状为(1, img_size, img_size)
         """
 
-        img_path_prefix = self.img_dir + '/' + \
-            self.img_dir.split('/')[-1].lower() + '_'
+        img_path_prefix = self.img_dir + '/' + self.img_dir.split('/')[-1].lower() + '_'
         img_path = img_path_prefix + self.data_list[index]
 
         # read images
@@ -164,10 +171,22 @@ class Weather_Dataset(Dataset):
     def __len__(self):
         return self.img_num
 
+
+class Weather_Dataset_2(Weather_Dataset):
+    """以图片为单位读取csv文件"""
+
+    def __init__(self, img_dir, csv_path, img_size, img_num=None, shuffle=True):
+        super().__init__(img_dir, csv_path, img_size)
+        
+        self.img_num = img_num if img_num is not None else len(self.data_list)
+        if shuffle:
+            self.data_list = np.random.choice(self.data_list, self.img_num, replace=False) # 以图片为单位打乱顺序
+
+
 class TEST_Dataset(Dataset):
 
     def __init__(self, img_dir, img_size):
-        """
+        """按照测试数据集格式读取图片
                 
         Parameters:
         ------- 

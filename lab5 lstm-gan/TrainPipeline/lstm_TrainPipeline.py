@@ -71,18 +71,18 @@ def lstm_TrainPipeline(opt, g_path, fe_path):
         generator.to(opt.device)
 
     # Optimizers
-    optimizer_TS = torch.optim.Adam(predictor.parameters(), lr=opt.lr, betas=(opt.b1, opt.b2))
-
+    optimizer_TS =ch.optim.Adam(predictor.parameters(), lr=opt.lr, betas=(opt.b1, opt.b2))
+ tor
     # Tensor convertion
     Tensor = torch.cuda.FloatTensor if opt.use_gpu else torch.FloatTensor
 
     # Configure data loader
-    datasets = Weather_Dataset(img_dir=opt.train_dataset_path + 'Radar', csv_path=opt.train_csv_path, img_size=opt.img_size, img_num=40*opt.row_num)
+    datasets = Weather_Dataset(img_dir=opt.train_dataset_path + opt.img_class, csv_path=opt.train_csv_path, img_size=opt.img_size, img_num=40*opt.row_num)
     dataloader = DataLoader(datasets, batch_size=opt.batch_size, shuffle=False, num_workers=opt.num_workers)
     
     # Start visualization
     if opt.vis:
-        vis = Visualizer(opt.vis_env, port=8098)
+        vis = Visualizer(opt.vis_env, port=8099)
 
     # ----------
     #  Training
@@ -174,5 +174,5 @@ def lstm_TrainPipeline(opt, g_path, fe_path):
         save_image(gen_future_sample[:9], opt.result_dir + opt.img_class + '/' + f"{epoch}_gen.png", nrow=3, normalize=False)
         save_image(future_sample[:9], opt.result_dir + opt.img_class + '/' + f"{epoch}_real.png", nrow=3, normalize=False)
         
-        torch.save(predictor.state_dict(), opt.save_model_file + opt.img_class + '/' + f'preditor_{epoch}.pth')
+        torch.save(predictor.state_dict(), opt.save_model_file + opt.img_class + '/' + f'predictor_{epoch}.pth')
         torch.save(optimizer_TS.state_dict(), opt.save_model_file + opt.img_class + '/' + f'optimizer_TS_{epoch}.pth')
