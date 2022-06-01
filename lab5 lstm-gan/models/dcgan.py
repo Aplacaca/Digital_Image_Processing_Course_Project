@@ -90,7 +90,7 @@ class Generator(nn.Module):
 
     def forward(self, z):
         out = self.l1(z)
-        import pdb;pdb.set_trace()
+        # import pdb;pdb.set_trace()
         out = out.view(out.shape[0], 128, self.init_size, self.init_size)
         img = self.conv_blocks(out)
         return img
@@ -126,3 +126,70 @@ class Conv_Generator(nn.Module):
         # out = out.view(out.shape[0], 128, self.init_size, self.init_size)
         # img = self.conv_blocks(out)
         return out
+
+class Conv_Generator_1(nn.Module):
+    def __init__(self, opt):
+        super(Conv_Generator_1, self).__init__()
+
+        # images of one batch: (40, 1, 256, 256)
+        # shape of input: (40, opt.latent_dim=100)
+
+        self.init_size = opt.img_size // 4 # 64
+        self.bn = nn.BatchNorm2d(128)
+        # self.prep = torch.nn.ConvTranspose2d(in_channels, out_channels=3, kernel_size=3)
+        self.encoder = ConvLSTM(None,input_channels=1, hidden_channels=[32,64], kernel_size=3, step=1,
+                        effective_step=[1])
+        self.decoder = ConvLSTM(None,input_channels=64, hidden_channels=[32,16], kernel_size=3, step=1,
+                        effective_step=[1])
+        self.outprocess = nn.Sequential(
+            # nn.Conv2d(64, 16, 3, 1,'same'),
+            nn.Conv2d(16, 1, 3, 1,'same'),
+            # nn.Conv2d(4, 1, 3, 1,'same'),
+            nn.Tanh()
+        )
+        # Initialize weights
+        # self.apply(weights_init_normal)
+
+    def forward(self, z):
+        out = self.encoder(z)
+        out = self.decoder(out[1][0])
+        out = self.outprocess(out[1][0])
+        # import pdb;pdb.set_trace()
+        # out = out.view(out.shape[0], 128, self.init_size, self.init_size)
+        # img = self.conv_blocks(out)
+        return out
+
+class Discriminator_1(nn.Module):
+    def __init__(self, opt):
+        super(Discriminator_1, self).__init__()
+
+        # images of one batch: (40, 1, 256, 256)
+
+        def discriminator_block(in_filters, out_filters, bn=True):
+            block = [nn.Conv2d(in_filters, out_filters, 3, 2, 1), nn.LeakyReLU(
+                0.2, inplace=True), nn.Dropout2d(0.25)]
+            if bn:
+                block.append(nn.BatchNorm2d(out_filters, 0.8))
+            return block
+
+        self.model = nn.Sequential(
+            *discriminator_block(opt.channels, 16, bn=False), # (40, 16, 128, 128)
+            *discriminator_block(16, 32), # (40, 32, 64, 64)
+            *discriminator_block(32, 64), # (40, 64, 32, 32)
+            *discriminator_block(64, 128), # (40, 128, 16, 16)
+        )
+
+        # The height and width of downsampled image
+        ds_size = opt.img_size // 2 ** 4
+        self.adv_layer = nn.Sequential(
+            nn.Linear(128 * ds_size ** 2, 1), nn.Sigmoid())
+
+        # Initialize weights
+        self.apply(weights_init_normal)
+
+    def forward(self, img):
+        out = self.model(img)
+        out = out.view(out.shape[0], -1)
+        validity = self.adv_layer(out)
+
+        return validity

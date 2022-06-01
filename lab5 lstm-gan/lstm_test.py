@@ -79,8 +79,10 @@ def lstm_Test(opt, g_path):
     Tensor = torch.cuda.FloatTensor if opt.use_gpu else torch.FloatTensor
 
     # Configure data loader
-    datasets = TEST_Dataset(img_dir='./data/TestB1/Radar', img_size=opt.img_size)
-    dataloader = DataLoader(datasets, batch_size=1, shuffle=False, num_workers=0)
+    # datasets = TEST_Dataset(img_dir='./data/TestB1/Radar', img_size=opt.img_size)
+    # dataloader = DataLoader(datasets, batch_size=1, shuffle=False, num_workers=0)
+    datasets = Weather_Dataset(img_dir=opt.train_dataset_path + opt.img_class, csv_path=opt.train_csv_path, img_size=opt.img_size, img_num=40*opt.row_num)
+    dataloader = DataLoader(datasets, batch_size=40, shuffle=False, num_workers=0)
     
     print(f'🔋 数据加载成功！')
 
@@ -95,25 +97,28 @@ def lstm_Test(opt, g_path):
     bar_format = '{desc}{n_fmt:>3s}/{total_fmt:<5s} |{bar}|{postfix}'
     print('🚀 开始测试！')
 
-    with tqdm(total=104, bar_format=bar_format) as bar:
+    with tqdm(total=len(dataloader), bar_format=bar_format) as bar:
         for i, imgs in enumerate(dataloader):
             
             # display the first part of progress bar
             bar.set_description(f"\33[36m🌌 ")
             
             # Predict a batch of images features
-            history_imgs = Variable(imgs.type(Tensor)).squeeze(0)
+            # history_imgs = Variable(imgs[:20].type(Tensor)).squeeze(0)
+            history_imgs = Variable(imgs[:20].type(Tensor))#.squeeze(0)
             # import ipdb;ipdb.set_trace()
-            # real_imgs = Variable(imgs[20:].type(Tensor))
+            real_imgs = Variable(imgs[20:].type(Tensor))
             
             gen_pred_imgs = generator(history_imgs)
             
-            # real_imgs = denormalize(real_imgs.data)
+            real_imgs = denormalize(real_imgs.data)
             history_imgs = denormalize(history_imgs.data)
             gen_pred_img = denormalize(gen_pred_imgs.data)
-            # vis.img(name='Real', img_=real_imgs[:4], nrow=2)
+            
+            vis.img(name='Real', img_=real_imgs[:4], nrow=2)
             vis.img(name='His', img_=history_imgs[:4], nrow=2)
             vis.img(name='Fake', img_=gen_pred_img[:4], nrow=2)
+
             if i%5 == 0:
                 save_result(i, opt, history_imgs, gen_pred_img, None, generator)
             # display the last part of progress bar
@@ -121,7 +126,7 @@ def lstm_Test(opt, g_path):
             bar.update()
 
             # sleep
-            time.sleep(0.1)
+            time.sleep(0.2)
 
 if __name__ == '__main__':
     with torch.no_grad():

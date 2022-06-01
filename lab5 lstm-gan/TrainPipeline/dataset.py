@@ -133,6 +133,7 @@ class Weather_Dataset(Dataset):
         self.transform = transforms.Compose([
             transforms.Resize((self.img_size, self.img_size)),
             transforms.ToTensor(),
+            # transforms.ColorJitter(brightness=0.5),
             transforms.Normalize(mean=[0.5], std=[0.5])
         ])
 
